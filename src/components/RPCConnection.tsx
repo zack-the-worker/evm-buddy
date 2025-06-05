@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,14 +24,14 @@ interface RPCConnectionProps {
 
 const PRESET_NETWORKS = [
   {
-    name: 'BSC Mainnet',
-    rpcUrl: 'https://bsc-dataseed1.binance.org/',
-    chainId: 56
-  },
-  {
     name: 'Ethereum Mainnet',
     rpcUrl: 'https://eth-mainnet.alchemyapi.io/v2/demo',
     chainId: 1
+  },
+  {
+    name: 'BSC Mainnet',
+    rpcUrl: 'https://bsc-dataseed1.binance.org/',
+    chainId: 56
   },
   {
     name: 'Polygon Mainnet',
@@ -41,6 +42,11 @@ const PRESET_NETWORKS = [
     name: 'BSC Testnet',
     rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
     chainId: 97
+  },
+  {
+    name: 'Ethereum Goerli',
+    rpcUrl: 'https://goerli.infura.io/v3/demo',
+    chainId: 5
   }
 ];
 
@@ -53,6 +59,7 @@ const RPCConnection: React.FC<RPCConnectionProps> = ({
   const [rpcUrl, setRpcUrl] = useState(connection.rpcUrl);
   const [walletAddress, setWalletAddress] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [networkInfo, setNetworkInfo] = useState<any>(null);
 
   const getNetworkName = (chainId: number): string => {
     const networks: { [key: number]: string } = {
@@ -78,6 +85,7 @@ const RPCConnection: React.FC<RPCConnectionProps> = ({
 
     setIsConnecting(true);
     try {
+      // Simulate RPC connection
       const response = await fetch(rpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,6 +110,7 @@ const RPCConnection: React.FC<RPCConnectionProps> = ({
         networkName
       };
 
+      setNetworkInfo({ chainId, networkName });
       onConnectionChange(newConnection);
 
     } catch (error) {
@@ -123,6 +132,7 @@ const RPCConnection: React.FC<RPCConnectionProps> = ({
       networkName: ''
     };
     setRpcUrl('');
+    setNetworkInfo(null);
     onConnectionChange(newConnection);
   };
 
@@ -147,104 +157,139 @@ const RPCConnection: React.FC<RPCConnectionProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Preset Networks */}
-      <div>
-        <Label htmlFor="preset-network" className="text-sm font-medium">Mạng có sẵn</Label>
-        <Select onValueChange={(value) => {
-          const network = PRESET_NETWORKS.find(n => n.name === value);
-          if (network) selectPresetNetwork(network);
-        }}>
-          <SelectTrigger className="mt-1">
-            <SelectValue placeholder="Chọn mạng" />
-          </SelectTrigger>
-          <SelectContent>
-            {PRESET_NETWORKS.map((network) => (
-              <SelectItem key={network.chainId} value={network.name}>
-                {network.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* RPC URL */}
-      <div>
-        <Label htmlFor="rpc-url" className="text-sm font-medium">RPC URL</Label>
-        <Input
-          id="rpc-url"
-          value={rpcUrl}
-          onChange={(e) => setRpcUrl(e.target.value)}
-          placeholder="https://bsc-dataseed1.binance.org/"
-          className="font-mono text-sm mt-1"
-        />
-      </div>
-
-      {/* Connection Status */}
-      {connection.isConnected && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Wifi className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-green-800">Đã kết nối</span>
-            </div>
-            <Badge variant="outline" className="text-green-700 border-green-300">
-              Chain: {connection.chainId}
-            </Badge>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* RPC Connection */}
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-2">
+            <Globe className="w-5 h-5 text-blue-600" />
+            <span>Kết nối RPC</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Preset Networks */}
+          <div>
+            <Label htmlFor="preset-network">Mạng có sẵn</Label>
+            <Select onValueChange={(value) => {
+              const network = PRESET_NETWORKS.find(n => n.name === value);
+              if (network) selectPresetNetwork(network);
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn mạng có sẵn" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRESET_NETWORKS.map((network) => (
+                  <SelectItem key={network.chainId} value={network.name}>
+                    {network.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <p className="text-sm text-green-700 mt-1">{connection.networkName}</p>
-        </div>
-      )}
 
-      {/* Connect Button */}
-      <div className="flex space-x-2">
-        <Button 
-          onClick={connectToRPC} 
-          disabled={isConnecting || !rpcUrl.trim()}
-          className="flex-1"
-          size="sm"
-        >
-          {isConnecting ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Kết nối...
-            </>
-          ) : (
-            <>
-              <Wifi className="w-4 h-4 mr-2" />
-              Kết nối
-            </>
+          {/* Custom RPC URL */}
+          <div>
+            <Label htmlFor="rpc-url">RPC URL</Label>
+            <Input
+              id="rpc-url"
+              value={rpcUrl}
+              onChange={(e) => setRpcUrl(e.target.value)}
+              placeholder="https://bsc-dataseed1.binance.org/"
+              className="font-mono text-sm"
+            />
+          </div>
+
+          {/* Connection Status */}
+          {connection.isConnected && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Wifi className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Đã kết nối</span>
+                </div>
+                <Badge variant="outline" className="text-green-700 border-green-300">
+                  Chain ID: {connection.chainId}
+                </Badge>
+              </div>
+              <p className="text-sm text-green-700 mt-1">{connection.networkName}</p>
+            </div>
           )}
-        </Button>
-        
-        {connection.isConnected && (
-          <Button variant="outline" onClick={disconnect} size="sm">
-            <WifiOff className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+
+          {/* Connect Button */}
+          <div className="flex space-x-2">
+            <Button 
+              onClick={connectToRPC} 
+              disabled={isConnecting || !rpcUrl.trim()}
+              className="flex-1"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Đang kết nối...
+                </>
+              ) : (
+                <>
+                  <Wifi className="w-4 h-4 mr-2" />
+                  Kết nối
+                </>
+              )}
+            </Button>
+            
+            {connection.isConnected && (
+              <Button variant="outline" onClick={disconnect}>
+                <WifiOff className="w-4 h-4 mr-2" />
+                Ngắt kết nối
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Wallet Address */}
-      <div className="border-t pt-4">
-        <Label htmlFor="wallet-address" className="text-sm font-medium">Địa chỉ ví (tùy chọn)</Label>
-        <div className="flex space-x-2 mt-1">
-          <Input
-            id="wallet-address"
-            value={walletAddress}
-            onChange={(e) => setWalletAddress(e.target.value)}
-            placeholder="0x..."
-            className="font-mono text-sm"
-          />
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-2">
+            <Badge className="w-5 h-5 text-purple-600" />
+            <span>Địa chỉ Ví</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="wallet-address">Địa chỉ ví (tùy chọn)</Label>
+            <Input
+              id="wallet-address"
+              value={walletAddress}
+              onChange={(e) => setWalletAddress(e.target.value)}
+              placeholder="0x742d35Cc6435C14C5f2f6e32f3e1a93b71A2c11C"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Dùng để hiển thị số dư token và thông tin ví
+            </p>
+          </div>
+
           <Button 
             onClick={handleWalletAddressSubmit}
             disabled={!walletAddress.trim()}
-            size="sm"
+            className="w-full"
             variant="outline"
           >
-            Set
+            Cập nhật địa chỉ ví
           </Button>
-        </div>
-      </div>
+
+          {/* Connection Info */}
+          {connection.isConnected && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">Thông tin kết nối</h4>
+              <div className="space-y-1 text-xs text-blue-700">
+                <div>RPC: {connection.rpcUrl}</div>
+                <div>Chain ID: {connection.chainId}</div>
+                <div>Mạng: {connection.networkName}</div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

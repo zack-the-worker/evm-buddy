@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +14,7 @@ import {
   Settings, 
   Globe, 
   Coins, 
-  Send,
+  Send, 
   Save,
   Upload,
   Download,
@@ -21,9 +22,7 @@ import {
   Edit,
   CheckCircle,
   AlertCircle,
-  Copy,
-  Eye,
-  Loader2
+  Copy
 } from 'lucide-react';
 import RPCConnection from '@/components/RPCConnection';
 import SmartContractInteraction from '@/components/SmartContractInteraction';
@@ -116,7 +115,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Smart Contract Communicator v1.5.5
+                  Smart Contract Communicator
                 </h1>
                 <p className="text-sm text-gray-500">Tương tác với Smart Contract trên EVM</p>
               </div>
@@ -147,104 +146,74 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - RPC & Presets */}
-          <div className="space-y-6">
-            {/* RPC Connection */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Globe className="w-5 h-5 text-blue-600" />
-                  <span>RPC Connection</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RPCConnection 
-                  connection={connection}
-                  onConnectionChange={handleConnectionChange}
-                  onWalletAddressChange={setWalletAddress}
-                />
-              </CardContent>
-            </Card>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs defaultValue="connection" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="connection" className="flex items-center space-x-2">
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Kết nối RPC</span>
+            </TabsTrigger>
+            <TabsTrigger value="contract" className="flex items-center space-x-2">
+              <Code className="w-4 h-4" />
+              <span className="hidden sm:inline">Smart Contract</span>
+            </TabsTrigger>
+            <TabsTrigger value="token" className="flex items-center space-x-2">
+              <Coins className="w-4 h-4" />
+              <span className="hidden sm:inline">Token ERC-20</span>
+            </TabsTrigger>
+            <TabsTrigger value="presets" className="flex items-center space-x-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Preset</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center space-x-2">
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline">Lịch sử</span>
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Preset Management */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Settings className="w-5 h-5 text-purple-600" />
-                  <span>Presets</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PresetManager
-                  presets={presets}
-                  onPresetsChange={setPresets}
-                  connection={connection}
-                  contract={contract}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <TabsContent value="connection">
+            <RPCConnection 
+              connection={connection}
+              onConnectionChange={handleConnectionChange}
+              onWalletAddressChange={setWalletAddress}
+            />
+          </TabsContent>
 
-          {/* Middle Column - Smart Contract */}
-          <div className="space-y-6">
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Code className="w-5 h-5 text-indigo-600" />
-                  <span>Smart Contract</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SmartContractInteraction
-                  connection={connection}
-                  contract={contract}
-                  onContractLoad={handleContractLoad}
-                  onTransactionSent={handleTransactionSent}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <TabsContent value="contract">
+            <SmartContractInteraction
+              connection={connection}
+              contract={contract}
+              onContractLoad={handleContractLoad}
+              onTransactionSent={handleTransactionSent}
+            />
+          </TabsContent>
 
-          {/* Right Column - Token & History */}
-          <div className="space-y-6">
-            {/* Token Management */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Coins className="w-5 h-5 text-green-600" />
-                  <span>ERC-20 Token</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TokenManager
-                  connection={connection}
-                  walletAddress={walletAddress}
-                  onTokenInfoUpdate={handleTokenInfoUpdate}
-                  onTransactionSent={handleTransactionSent}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="token">
+            <TokenManager
+              connection={connection}
+              walletAddress={walletAddress}
+              onTokenInfoUpdate={handleTokenInfoUpdate}
+              onTransactionSent={handleTransactionSent}
+            />
+          </TabsContent>
 
-            {/* Transaction History */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Send className="w-5 h-5 text-orange-600" />
-                  <span>Transaction History</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TransactionHistory
-                  transactions={transactions}
-                  connection={connection}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          <TabsContent value="presets">
+            <PresetManager
+              presets={presets}
+              onPresetsChange={setPresets}
+              connection={connection}
+              contract={contract}
+            />
+          </TabsContent>
+
+          <TabsContent value="history">
+            <TransactionHistory
+              transactions={transactions}
+              connection={connection}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
