@@ -134,11 +134,15 @@ const Index = () => {
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [methodParams, setMethodParams] = useState<{ [key: string]: string }>({});
   const [isExecuting, setIsExecuting] = useState(false);
-  const [showMethodModal, setShowMethodModal] = useState(false);
   const [methodResult, setMethodResult] = useState<any>(null);
   const [gasLimit, setGasLimit] = useState('100000');
   const [gasPrice, setGasPrice] = useState('');
   const [ethValue, setEthValue] = useState('0');
+
+  // New state for selected method and its parameters
+  const [selectedMethodName, setSelectedMethodName] = useState<string>('');
+  const [selectedMethodInputs, setSelectedMethodInputs] = useState<any[]>([]);
+  const [methodParameters, setMethodParameters] = useState<{ [key: string]: string }>({});
 
   const getNetworkName = (chainId: number): string => {
     const networks: { [key: number]: string } = {
@@ -319,71 +323,34 @@ const Index = () => {
     }
   };
 
-  const callReadMethod = async (method: any) => {
-    if (!connection.isConnected) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng kết nối RPC trước",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsExecuting(true);
-    try {
-      // Prepare method parameters
-      const params = method.inputs?.map((input: any, index: number) => {
-        const paramValue = methodParams[`${method.name}_${index}`] || '';
-        
-        // Convert parameter based on type
-        if (input.type === 'uint256' || input.type.startsWith('uint')) {
-          return paramValue;
-        } else if (input.type === 'address') {
-          return paramValue;
-        } else if (input.type === 'bool') {
-          return paramValue.toLowerCase() === 'true';
-        }
-        return paramValue;
-      }) || [];
-
-      // Encode function call
-      const methodSignature = `${method.name}(${method.inputs?.map((i: any) => i.type).join(',') || ''})`;
+  const handleMethodSelect = (methodName: string) => {
+    setSelectedMethodName(methodName);
+    
+    // Find the selected method
+    const allMethods = [...readMethods, ...writeMethods];
+    const method = allMethods.find(m => m.name === methodName);
+    
+    if (method) {
+      setSelectedMethod(method);
+      setSelectedMethodInputs(method.inputs || []);
       
-      // For demo purposes, simulate the call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      let result;
-      if (method.name === 'name' || method.name === 'symbol') {
-        result = method.name === 'name' ? 'Demo Token' : 'DEMO';
-      } else if (method.name === 'totalSupply' || method.name === 'balanceOf') {
-        result = '1000000000000000000000'; // 1000 tokens with 18 decimals
-      } else {
-        result = 'Success';
-      }
-
-      setMethodResult({
-        method: method.name,
-        result: result,
-        type: 'read'
+      // Reset parameters
+      const newParams: { [key: string]: string } = {};
+      (method.inputs || []).forEach((input: any, index: number) => {
+        newParams[`param_${index}`] = '';
       });
-
-      toast({
-        title: "Đọc dữ liệu thành công",
-        description: `${method.name}: ${result}`,
-      });
-
-    } catch (error) {
-      toast({
-        title: "Lỗi khi đọc dữ liệu",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
-        variant: "destructive"
-      });
-    } finally {
-      setIsExecuting(false);
+      setMethodParameters(newParams);
     }
   };
 
-  const executeWriteMethod = async () => {
+  const updateParameter = (paramIndex: number, value: string) => {
+    setMethodParameters(prev => ({
+      ...prev,
+      [`param_${paramIndex}`]: value
+    }));
+  };
+
+  const executeSelectedMethod = async () => {
     if (!selectedMethod || !connection.isConnected) {
       toast({
         title: "Lỗi",
@@ -393,10 +360,12 @@ const Index = () => {
       return;
     }
 
-    if (!walletAddress) {
+    const isReadMethod = selectedMethod.stateMutability === 'view' || selectedMethod.stateMutability === 'pure';
+    
+    if (!isReadMethod && !walletAddress) {
       toast({
         title: "Lỗi",
-        description: "Vui lòng nhập địa chỉ ví",
+        description: "Vui lòng nhập địa chỉ ví cho WRITE method",
         variant: "destructive"
       });
       return;
@@ -405,8 +374,8 @@ const Index = () => {
     setIsExecuting(true);
     try {
       // Prepare method parameters
-      const params = selectedMethod.inputs?.map((input: any, index: number) => {
-        const paramValue = methodParams[`${selectedMethod.name}_${index}`] || '';
+      const params = selectedMethodInputs.map((input: any, index: number) => {
+        const paramValue = methodParameters[`param_${index}`] || '';
         
         if (input.type === 'uint256' || input.type.startsWith('uint')) {
           return paramValue;
@@ -416,58 +385,48 @@ const Index = () => {
           return paramValue.toLowerCase() === 'true';
         }
         return paramValue;
-      }) || [];
+      });
 
-      // Simulate transaction
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate execution
+      await new Promise(resolve => setTimeout(resolve, isReadMethod ? 1000 : 2000));
       
-      const txHash = '0x' + Math.random().toString(16).substr(2, 64);
-      
+      let result;
+      if (isReadMethod) {
+        // Simulate read results
+        if (selectedMethod.name === 'name' || selectedMethod.name === 'symbol') {
+          result = selectedMethod.name === 'name' ? 'Demo Token' : 'DEMO';
+        } else if (selectedMethod.name === 'totalSupply' || selectedMethod.name === 'balanceOf') {
+          result = '1000000000000000000000'; // 1000 tokens with 18 decimals
+        } else {
+          result = 'Success';
+        }
+      } else {
+        // Simulate transaction hash for write methods
+        result = '0x' + Math.random().toString(16).substr(2, 64);
+      }
+
       setMethodResult({
         method: selectedMethod.name,
-        result: txHash,
-        type: 'write',
-        gasUsed: gasLimit,
-        gasPrice: gasPrice || '20'
+        result: result,
+        type: isReadMethod ? 'read' : 'write',
+        gasUsed: isReadMethod ? undefined : gasLimit,
+        gasPrice: isReadMethod ? undefined : (gasPrice || '20')
       });
 
       toast({
-        title: "Giao dịch thành công",
-        description: `Hash: ${txHash}`,
+        title: isReadMethod ? "Đọc dữ liệu thành công" : "Giao dịch thành công",
+        description: `${selectedMethod.name}: ${result}`,
       });
-
-      setShowMethodModal(false);
-      setSelectedMethod(null);
-      setMethodParams({});
 
     } catch (error) {
       toast({
-        title: "Giao dịch thất bại",
+        title: isReadMethod ? "Lỗi khi đọc dữ liệu" : "Giao dịch thất bại",
         description: error instanceof Error ? error.message : "Có lỗi xảy ra",
         variant: "destructive"
       });
     } finally {
       setIsExecuting(false);
     }
-  };
-
-  const openMethodModal = (method: any) => {
-    setSelectedMethod(method);
-    setShowMethodModal(true);
-    
-    // Initialize empty parameters
-    const params: { [key: string]: string } = {};
-    method.inputs?.forEach((input: any, index: number) => {
-      params[`${method.name}_${index}`] = '';
-    });
-    setMethodParams(params);
-  };
-
-  const updateMethodParam = (paramKey: string, value: string) => {
-    setMethodParams(prev => ({
-      ...prev,
-      [paramKey]: value
-    }));
   };
 
   const readMethods = contract.abi.filter(method => 
@@ -479,6 +438,8 @@ const Index = () => {
     method.type === 'function' && 
     (method.stateMutability === 'nonpayable' || method.stateMutability === 'payable')
   );
+
+  const allMethods = [...readMethods, ...writeMethods];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -739,98 +700,143 @@ const Index = () => {
                         <span>Thực hiện Method</span>
                       </h4>
                       
-                      {/* Method Results */}
-                      {methodResult && (
-                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium text-sm">Kết quả: {methodResult.method}</h5>
-                            <Badge variant="outline" className={methodResult.type === 'read' ? 'border-blue-300 text-blue-700' : 'border-green-300 text-green-700'}>
-                              {methodResult.type.toUpperCase()}
-                            </Badge>
-                          </div>
-                          <p className="text-sm font-mono break-all">{methodResult.result}</p>
-                          {methodResult.type === 'write' && (
-                            <div className="mt-2 text-xs text-gray-600">
-                              Gas Used: {methodResult.gasUsed} | Gas Price: {methodResult.gasPrice} Gwei
+                      {/* Method Selection */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="method-select">Chọn Method</Label>
+                          <Select value={selectedMethodName} onValueChange={handleMethodSelect}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Chọn method để thực hiện" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border shadow-lg z-50">
+                              {readMethods.length > 0 && (
+                                <>
+                                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-b">
+                                    READ METHODS
+                                  </div>
+                                  {readMethods.map((method, index) => (
+                                    <SelectItem key={`read-${index}`} value={method.name}>
+                                      <div className="flex items-center space-x-2">
+                                        <Eye className="w-3 h-3 text-blue-600" />
+                                        <span>{method.name}</span>
+                                        <Badge variant="outline" className="text-xs">READ</Badge>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </>
+                              )}
+                              
+                              {writeMethods.length > 0 && (
+                                <>
+                                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-b">
+                                    WRITE METHODS
+                                  </div>
+                                  {writeMethods.map((method, index) => (
+                                    <SelectItem key={`write-${index}`} value={method.name}>
+                                      <div className="flex items-center space-x-2">
+                                        <Edit className="w-3 h-3 text-orange-600" />
+                                        <span>{method.name}</span>
+                                        <Badge variant="outline" className="text-xs">WRITE</Badge>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Method Parameters */}
+                        {selectedMethod && selectedMethodInputs.length > 0 && (
+                          <div>
+                            <Label>Tham số của Method</Label>
+                            <div className="space-y-3 mt-2">
+                              {selectedMethodInputs.map((input: any, index: number) => (
+                                <div key={index} className="space-y-1">
+                                  <Label htmlFor={`param-${index}`} className="text-sm">
+                                    {input.name || `Tham số ${index + 1}`} 
+                                    <span className="text-gray-500 ml-1">({input.type})</span>
+                                  </Label>
+                                  <Input
+                                    id={`param-${index}`}
+                                    value={methodParameters[`param_${index}`] || ''}
+                                    onChange={(e) => updateParameter(index, e.target.value)}
+                                    placeholder={`Nhập giá trị ${input.type}`}
+                                    className="font-mono text-sm"
+                                  />
+                                </div>
+                              ))}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Gas Settings for WRITE methods */}
+                        {selectedMethod && (selectedMethod.stateMutability === 'nonpayable' || selectedMethod.stateMutability === 'payable') && (
+                          <div className="space-y-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <Label className="text-sm font-medium">Cài đặt Gas (WRITE Method)</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="gas-limit" className="text-xs">Gas Limit</Label>
+                                <Input
+                                  id="gas-limit"
+                                  value={gasLimit}
+                                  onChange={(e) => setGasLimit(e.target.value)}
+                                  placeholder="100000"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="gas-price" className="text-xs">Gas Price (Gwei)</Label>
+                                <Input
+                                  id="gas-price"
+                                  value={gasPrice}
+                                  onChange={(e) => setGasPrice(e.target.value)}
+                                  placeholder="20"
+                                  className="text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Execute Button */}
+                        <Button 
+                          onClick={executeSelectedMethod}
+                          disabled={!selectedMethod || isExecuting || !connection.isConnected}
+                          className="w-full"
+                        >
+                          {isExecuting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Đang thực hiện...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-2" />
+                              Gọi Method
+                            </>
                           )}
-                        </div>
-                      )}
+                        </Button>
 
-                      {/* READ Methods */}
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <Eye className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-medium">READ Methods ({readMethods.length})</span>
-                        </div>
-                        {readMethods.slice(0, 3).map((method, index) => (
-                          <div key={index} className="p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h5 className="font-medium text-sm">{method.name}</h5>
-                                <p className="text-xs text-gray-500">
-                                  Returns: {method.outputs?.[0]?.type || 'void'}
-                                </p>
-                                {method.inputs && method.inputs.length > 0 && (
-                                  <p className="text-xs text-gray-500">
-                                    Params: {method.inputs.length}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex space-x-2">
-                                {method.inputs && method.inputs.length > 0 && (
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => openMethodModal(method)}
-                                  >
-                                    Cấu hình
-                                  </Button>
-                                )}
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => callReadMethod(method)}
-                                  disabled={isExecuting}
-                                >
-                                  {isExecuting ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    'Gọi'
-                                  )}
-                                </Button>
-                              </div>
+                        {/* Method Results */}
+                        {methodResult && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-medium text-sm">Kết quả: {methodResult.method}</h5>
+                              <Badge variant="outline" className={methodResult.type === 'read' ? 'border-blue-300 text-blue-700' : 'border-green-300 text-green-700'}>
+                                {methodResult.type.toUpperCase()}
+                              </Badge>
                             </div>
-                          </div>
-                        ))}
-
-                        {/* WRITE Methods */}
-                        <div className="flex items-center space-x-2 mt-4">
-                          <Edit className="w-4 h-4 text-orange-600" />
-                          <span className="text-sm font-medium">WRITE Methods ({writeMethods.length})</span>
-                        </div>
-                        {writeMethods.slice(0, 2).map((method, index) => (
-                          <div key={index} className="p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h5 className="font-medium text-sm">{method.name}</h5>
-                                <p className="text-xs text-gray-500">
-                                  {method.inputs?.length || 0} parameters
-                                </p>
+                            <p className="text-sm font-mono break-all bg-white p-2 rounded border">
+                              {methodResult.result}
+                            </p>
+                            {methodResult.type === 'write' && (
+                              <div className="mt-2 text-xs text-gray-600">
+                                Gas Used: {methodResult.gasUsed} | Gas Price: {methodResult.gasPrice} Gwei
                               </div>
-                              <Button 
-                                size="sm" 
-                                onClick={() => openMethodModal(method)}
-                                disabled={isExecuting}
-                              >
-                                {isExecuting && selectedMethod?.name === method.name ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  'Thực hiện'
-                                )}
-                              </Button>
-                            </div>
+                            )}
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </>
@@ -840,103 +846,6 @@ const Index = () => {
           </div>
         </div>
       </div>
-
-      {/* Method Parameter Modal */}
-      {showMethodModal && selectedMethod && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">
-                  {selectedMethod.name}
-                  <Badge className="ml-2" variant={selectedMethod.stateMutability === 'view' ? 'outline' : 'default'}>
-                    {selectedMethod.stateMutability === 'view' ? 'READ' : 'WRITE'}
-                  </Badge>
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setShowMethodModal(false)}>
-                  ✕
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Method Parameters */}
-                {selectedMethod.inputs && selectedMethod.inputs.length > 0 ? (
-                  selectedMethod.inputs.map((input: any, index: number) => (
-                    <div key={index}>
-                      <Label htmlFor={`param-${index}`}>
-                        {input.name || `Param ${index + 1}`} ({input.type})
-                      </Label>
-                      <Input
-                        id={`param-${index}`}
-                        value={methodParams[`${selectedMethod.name}_${index}`] || ''}
-                        onChange={(e) => updateMethodParam(`${selectedMethod.name}_${index}`, e.target.value)}
-                        placeholder={`Enter ${input.type}`}
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">Không có tham số</p>
-                )}
-
-                {/* Transaction Settings for WRITE methods */}
-                {selectedMethod.stateMutability !== 'view' && (
-                  <>
-                    <Separator />
-                    <div>
-                      <Label htmlFor="gas-limit">Gas Limit</Label>
-                      <Input
-                        id="gas-limit"
-                        value={gasLimit}
-                        onChange={(e) => setGasLimit(e.target.value)}
-                        placeholder="100000"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="gas-price">Gas Price (Gwei)</Label>
-                      <Input
-                        id="gas-price"
-                        value={gasPrice}
-                        onChange={(e) => setGasPrice(e.target.value)}
-                        placeholder="20"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="eth-value">Giá trị ETH/BNB (Wei)</Label>
-                      <Input
-                        id="eth-value"
-                        value={ethValue}
-                        onChange={(e) => setEthValue(e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="flex space-x-2 mt-6">
-                <Button variant="outline" onClick={() => setShowMethodModal(false)} className="flex-1">
-                  Hủy
-                </Button>
-                <Button 
-                  onClick={selectedMethod.stateMutability === 'view' ? () => callReadMethod(selectedMethod) : executeWriteMethod}
-                  disabled={isExecuting}
-                  className="flex-1"
-                >
-                  {isExecuting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Đang thực hiện...
-                    </>
-                  ) : (
-                    selectedMethod.stateMutability === 'view' ? 'Đọc dữ liệu' : 'Gửi giao dịch'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
