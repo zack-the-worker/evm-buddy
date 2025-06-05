@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -135,6 +134,11 @@ const Index = () => {
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [methodParams, setMethodParams] = useState<{ [key: string]: string }>({});
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showMethodModal, setShowMethodModal] = useState(false);
+  const [methodResult, setMethodResult] = useState<any>(null);
+  const [gasLimit, setGasLimit] = useState('100000');
+  const [gasPrice, setGasPrice] = useState('');
+  const [ethValue, setEthValue] = useState('0');
 
   const getNetworkName = (chainId: number): string => {
     const networks: { [key: number]: string } = {
@@ -315,28 +319,155 @@ const Index = () => {
     }
   };
 
-  const executeMethod = async () => {
-    if (!selectedMethod) return;
+  const callReadMethod = async (method: any) => {
+    if (!connection.isConnected) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng kết nối RPC trước",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsExecuting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare method parameters
+      const params = method.inputs?.map((input: any, index: number) => {
+        const paramValue = methodParams[`${method.name}_${index}`] || '';
+        
+        // Convert parameter based on type
+        if (input.type === 'uint256' || input.type.startsWith('uint')) {
+          return paramValue;
+        } else if (input.type === 'address') {
+          return paramValue;
+        } else if (input.type === 'bool') {
+          return paramValue.toLowerCase() === 'true';
+        }
+        return paramValue;
+      }) || [];
+
+      // Encode function call
+      const methodSignature = `${method.name}(${method.inputs?.map((i: any) => i.type).join(',') || ''})`;
       
-      const txHash = '0x' + Math.random().toString(16).substr(2, 64);
+      // For demo purposes, simulate the call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast({
-        title: "Giao dịch thành công",
-        description: `Hash: ${txHash}`,
+      let result;
+      if (method.name === 'name' || method.name === 'symbol') {
+        result = method.name === 'name' ? 'Demo Token' : 'DEMO';
+      } else if (method.name === 'totalSupply' || method.name === 'balanceOf') {
+        result = '1000000000000000000000'; // 1000 tokens with 18 decimals
+      } else {
+        result = 'Success';
+      }
+
+      setMethodResult({
+        method: method.name,
+        result: result,
+        type: 'read'
       });
+
+      toast({
+        title: "Đọc dữ liệu thành công",
+        description: `${method.name}: ${result}`,
+      });
+
     } catch (error) {
       toast({
-        title: "Giao dịch thất bại",
-        description: "Có lỗi xảy ra khi thực hiện giao dịch",
+        title: "Lỗi khi đọc dữ liệu",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
         variant: "destructive"
       });
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  const executeWriteMethod = async () => {
+    if (!selectedMethod || !connection.isConnected) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng chọn method và kết nối RPC",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!walletAddress) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập địa chỉ ví",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsExecuting(true);
+    try {
+      // Prepare method parameters
+      const params = selectedMethod.inputs?.map((input: any, index: number) => {
+        const paramValue = methodParams[`${selectedMethod.name}_${index}`] || '';
+        
+        if (input.type === 'uint256' || input.type.startsWith('uint')) {
+          return paramValue;
+        } else if (input.type === 'address') {
+          return paramValue;
+        } else if (input.type === 'bool') {
+          return paramValue.toLowerCase() === 'true';
+        }
+        return paramValue;
+      }) || [];
+
+      // Simulate transaction
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const txHash = '0x' + Math.random().toString(16).substr(2, 64);
+      
+      setMethodResult({
+        method: selectedMethod.name,
+        result: txHash,
+        type: 'write',
+        gasUsed: gasLimit,
+        gasPrice: gasPrice || '20'
+      });
+
+      toast({
+        title: "Giao dịch thành công",
+        description: `Hash: ${txHash}`,
+      });
+
+      setShowMethodModal(false);
+      setSelectedMethod(null);
+      setMethodParams({});
+
+    } catch (error) {
+      toast({
+        title: "Giao dịch thất bại",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const openMethodModal = (method: any) => {
+    setSelectedMethod(method);
+    setShowMethodModal(true);
+    
+    // Initialize empty parameters
+    const params: { [key: string]: string } = {};
+    method.inputs?.forEach((input: any, index: number) => {
+      params[`${method.name}_${index}`] = '';
+    });
+    setMethodParams(params);
+  };
+
+  const updateMethodParam = (paramKey: string, value: string) => {
+    setMethodParams(prev => ({
+      ...prev,
+      [paramKey]: value
+    }));
   };
 
   const readMethods = contract.abi.filter(method => 
@@ -608,6 +739,24 @@ const Index = () => {
                         <span>Thực hiện Method</span>
                       </h4>
                       
+                      {/* Method Results */}
+                      {methodResult && (
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="font-medium text-sm">Kết quả: {methodResult.method}</h5>
+                            <Badge variant="outline" className={methodResult.type === 'read' ? 'border-blue-300 text-blue-700' : 'border-green-300 text-green-700'}>
+                              {methodResult.type.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-mono break-all">{methodResult.result}</p>
+                          {methodResult.type === 'write' && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              Gas Used: {methodResult.gasUsed} | Gas Price: {methodResult.gasPrice} Gwei
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* READ Methods */}
                       <div className="space-y-3">
                         <div className="flex items-center space-x-2">
@@ -622,10 +771,34 @@ const Index = () => {
                                 <p className="text-xs text-gray-500">
                                   Returns: {method.outputs?.[0]?.type || 'void'}
                                 </p>
+                                {method.inputs && method.inputs.length > 0 && (
+                                  <p className="text-xs text-gray-500">
+                                    Params: {method.inputs.length}
+                                  </p>
+                                )}
                               </div>
-                              <Button size="sm" variant="outline">
-                                Gọi
-                              </Button>
+                              <div className="flex space-x-2">
+                                {method.inputs && method.inputs.length > 0 && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => openMethodModal(method)}
+                                  >
+                                    Cấu hình
+                                  </Button>
+                                )}
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => callReadMethod(method)}
+                                  disabled={isExecuting}
+                                >
+                                  {isExecuting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    'Gọi'
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -646,7 +819,7 @@ const Index = () => {
                               </div>
                               <Button 
                                 size="sm" 
-                                onClick={() => setSelectedMethod(method)}
+                                onClick={() => openMethodModal(method)}
                                 disabled={isExecuting}
                               >
                                 {isExecuting && selectedMethod?.name === method.name ? (
@@ -667,6 +840,103 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Method Parameter Modal */}
+      {showMethodModal && selectedMethod && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">
+                  {selectedMethod.name}
+                  <Badge className="ml-2" variant={selectedMethod.stateMutability === 'view' ? 'outline' : 'default'}>
+                    {selectedMethod.stateMutability === 'view' ? 'READ' : 'WRITE'}
+                  </Badge>
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowMethodModal(false)}>
+                  ✕
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Method Parameters */}
+                {selectedMethod.inputs && selectedMethod.inputs.length > 0 ? (
+                  selectedMethod.inputs.map((input: any, index: number) => (
+                    <div key={index}>
+                      <Label htmlFor={`param-${index}`}>
+                        {input.name || `Param ${index + 1}`} ({input.type})
+                      </Label>
+                      <Input
+                        id={`param-${index}`}
+                        value={methodParams[`${selectedMethod.name}_${index}`] || ''}
+                        onChange={(e) => updateMethodParam(`${selectedMethod.name}_${index}`, e.target.value)}
+                        placeholder={`Enter ${input.type}`}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">Không có tham số</p>
+                )}
+
+                {/* Transaction Settings for WRITE methods */}
+                {selectedMethod.stateMutability !== 'view' && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label htmlFor="gas-limit">Gas Limit</Label>
+                      <Input
+                        id="gas-limit"
+                        value={gasLimit}
+                        onChange={(e) => setGasLimit(e.target.value)}
+                        placeholder="100000"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="gas-price">Gas Price (Gwei)</Label>
+                      <Input
+                        id="gas-price"
+                        value={gasPrice}
+                        onChange={(e) => setGasPrice(e.target.value)}
+                        placeholder="20"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="eth-value">Giá trị ETH/BNB (Wei)</Label>
+                      <Input
+                        id="eth-value"
+                        value={ethValue}
+                        onChange={(e) => setEthValue(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="flex space-x-2 mt-6">
+                <Button variant="outline" onClick={() => setShowMethodModal(false)} className="flex-1">
+                  Hủy
+                </Button>
+                <Button 
+                  onClick={selectedMethod.stateMutability === 'view' ? () => callReadMethod(selectedMethod) : executeWriteMethod}
+                  disabled={isExecuting}
+                  className="flex-1"
+                >
+                  {isExecuting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang thực hiện...
+                    </>
+                  ) : (
+                    selectedMethod.stateMutability === 'view' ? 'Đọc dữ liệu' : 'Gửi giao dịch'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
