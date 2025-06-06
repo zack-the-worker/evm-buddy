@@ -408,11 +408,37 @@ const Index = () => {
         return '0x' + Math.random().toString(16).substr(2, 64);
       
       default:
-        // For unknown methods, return a generic success response
-        if (method.stateMutability === 'view' || method.stateMutability === 'pure') {
-          return 'Method executed successfully';
-        } else {
+        // For unknown methods, return realistic mock data based on method type
+        const isWriteMethod = method.stateMutability === 'nonpayable' || method.stateMutability === 'payable';
+        
+        if (isWriteMethod) {
+          // Return transaction hash for write operations
           return '0x' + Math.random().toString(16).substr(2, 64);
+        } else {
+          // For read methods, return data based on expected output type
+          const outputType = method.outputs?.[0]?.type;
+          
+          switch (outputType) {
+            case 'uint256':
+            case 'uint':
+              return Math.floor(Math.random() * 1000000).toString();
+            
+            case 'string':
+              return `Sample string result for ${method.name}`;
+            
+            case 'bool':
+              return Math.random() > 0.5;
+            
+            case 'address':
+              return '0x' + Math.random().toString(16).substr(2, 40);
+            
+            case 'bytes32':
+              return '0x' + Math.random().toString(16).substr(2, 64);
+            
+            default:
+              // Return a numeric value as default
+              return Math.floor(Math.random() * 1000).toString();
+          }
         }
     }
   };
