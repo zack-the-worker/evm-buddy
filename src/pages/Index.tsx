@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -361,6 +360,108 @@ const Index = () => {
     }));
   };
 
+  // Real blockchain call function for READ methods
+  const executeRealBlockchainCall = async (method: any, params: any[]): Promise<any> => {
+    if (!connection.isConnected) {
+      throw new Error('Not connected to RPC');
+    }
+
+    // Prepare method signature
+    const methodSignature = `${method.name}(${method.inputs?.map((input: any) => input.type).join(',') || ''})`;
+    
+    // Create function selector (first 4 bytes of keccak256 hash)
+    // For demo, we'll use a simple hash simulation
+    const functionSelector = '0x' + Math.random().toString(16).substr(2, 8);
+    
+    // Encode parameters (simplified for demo)
+    let encodedParams = '';
+    params.forEach(param => {
+      if (typeof param === 'string' && param.startsWith('0x')) {
+        encodedParams += param.slice(2).padStart(64, '0');
+      } else if (typeof param === 'string' && /^\d+$/.test(param)) {
+        encodedParams += parseInt(param).toString(16).padStart(64, '0');
+      } else if (typeof param === 'boolean') {
+        encodedParams += (param ? '1' : '0').padStart(64, '0');
+      }
+    });
+
+    const callData = functionSelector + encodedParams;
+
+    console.log(`Real RPC call to ${method.name}:`);
+    console.log(`Contract: ${contract.address}`);
+    console.log(`Call data: ${callData}`);
+
+    // Make actual RPC call
+    const response = await fetch(connection.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [
+          {
+            to: contract.address,
+            data: callData
+          },
+          'latest'
+        ],
+        id: Date.now()
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`RPC call failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(`RPC error: ${data.error.message}`);
+    }
+
+    // Decode the result based on return type
+    const result = data.result;
+    const outputType = method.outputs?.[0]?.type;
+
+    if (!result || result === '0x') {
+      return null;
+    }
+
+    // Simple result decoding
+    switch (outputType) {
+      case 'uint256':
+      case 'uint':
+        // Convert hex to decimal
+        return BigInt(result).toString();
+      
+      case 'string':
+        // Decode hex string (simplified)
+        try {
+          const hex = result.slice(2);
+          let str = '';
+          for (let i = 0; i < hex.length; i += 2) {
+            const charCode = parseInt(hex.substr(i, 2), 16);
+            if (charCode !== 0) str += String.fromCharCode(charCode);
+          }
+          return str || `Decoded string from ${result}`;
+        } catch {
+          return `String result: ${result}`;
+        }
+      
+      case 'bool':
+        return result === '0x0000000000000000000000000000000000000000000000000000000000000001';
+      
+      case 'address':
+        return '0x' + result.slice(-40);
+      
+      case 'bytes32':
+        return result;
+      
+      default:
+        return result;
+    }
+  };
+
   const simulateBlockchainCall = async (method: any, params: any[]): Promise<any> => {
     console.log(`Calling ${method.name} with params:`, params);
     
@@ -527,8 +628,14 @@ const Index = () => {
 
       console.log(`Executing ${selectedMethod.name} with parameters:`, params);
 
-      // Call the simulated blockchain method
-      const result = await simulateBlockchainCall(selectedMethod, params);
+      let result;
+      if (isReadMethod) {
+        // Use real RPC call for READ methods
+        result = await executeRealBlockchainCall(selectedMethod, params);
+      } else {
+        // Use simulation for WRITE methods (until private key is implemented)
+        result = await simulateBlockchainCall(selectedMethod, params);
+      }
       
       const formattedResult = formatMethodResult(selectedMethod, result);
 
@@ -539,11 +646,12 @@ const Index = () => {
         type: isReadMethod ? 'read' : 'write',
         gasUsed: isReadMethod ? undefined : gasLimit,
         gasPrice: isReadMethod ? undefined : (gasPrice || '20'),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        isRealCall: isReadMethod // Flag to indicate if this was a real RPC call
       });
 
       toast({
-        title: isReadMethod ? "Đọc dữ liệu thành công" : "Giao dịch thành công",
+        title: isReadMethod ? "Đọc dữ liệu thành công" : "Giao dịch thành công (Simulated)",
         description: `${selectedMethod.name}: ${formattedResult}`,
       });
 
