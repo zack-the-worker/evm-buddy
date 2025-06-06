@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,16 @@ const sampleABI = [
     "name": "transfer",
     "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "owner", "type": "address"},
+      {"internalType": "address", "name": "spender", "type": "address"}
+    ],
+    "name": "allowance",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
     "type": "function"
   }
 ];
@@ -350,6 +361,96 @@ const Index = () => {
     }));
   };
 
+  const simulateBlockchainCall = async (method: any, params: any[]): Promise<any> => {
+    console.log(`Calling ${method.name} with params:`, params);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+    
+    // Simulate real blockchain responses based on method type
+    switch (method.name) {
+      case 'name':
+        return 'MyToken';
+      
+      case 'symbol':
+        return 'MTK';
+      
+      case 'totalSupply':
+        return '1000000000000000000000000'; // 1M tokens with 18 decimals
+      
+      case 'balanceOf':
+        const address = params[0];
+        if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {
+          throw new Error('Invalid address format');
+        }
+        // Simulate different balances for different addresses
+        const lastDigit = parseInt(address.slice(-1), 16);
+        return (BigInt(lastDigit) * BigInt('1000000000000000000')).toString(); // lastDigit ETH
+      
+      case 'allowance':
+        const owner = params[0];
+        const spender = params[1];
+        if (!owner?.match(/^0x[a-fA-F0-9]{40}$/) || !spender?.match(/^0x[a-fA-F0-9]{40}$/)) {
+          throw new Error('Invalid address format');
+        }
+        return '500000000000000000000'; // 500 tokens allowed
+      
+      case 'transfer':
+        const to = params[0];
+        const amount = params[1];
+        if (!to?.match(/^0x[a-fA-F0-9]{40}$/)) {
+          throw new Error('Invalid recipient address');
+        }
+        if (!amount || BigInt(amount) <= 0) {
+          throw new Error('Invalid transfer amount');
+        }
+        // Return transaction hash for write operations
+        return '0x' + Math.random().toString(16).substr(2, 64);
+      
+      default:
+        // For unknown methods, return a generic success response
+        if (method.stateMutability === 'view' || method.stateMutability === 'pure') {
+          return 'Method executed successfully';
+        } else {
+          return '0x' + Math.random().toString(16).substr(2, 64);
+        }
+    }
+  };
+
+  const formatMethodResult = (method: any, result: any): string => {
+    const isWriteMethod = method.stateMutability === 'nonpayable' || method.stateMutability === 'payable';
+    
+    if (isWriteMethod) {
+      return `Transaction Hash: ${result}`;
+    }
+    
+    // Format read method results based on return type
+    const outputType = method.outputs?.[0]?.type;
+    
+    switch (outputType) {
+      case 'uint256':
+        // Convert wei to readable format for token amounts
+        if (['totalSupply', 'balanceOf', 'allowance'].includes(method.name)) {
+          const value = BigInt(result);
+          const readable = (Number(value) / 1e18).toFixed(4);
+          return `${readable} tokens (${result} wei)`;
+        }
+        return result;
+      
+      case 'string':
+        return result;
+      
+      case 'bool':
+        return result ? 'true' : 'false';
+      
+      case 'address':
+        return result;
+      
+      default:
+        return result?.toString() || 'No return value';
+    }
+  };
+
   const executeSelectedMethod = async () => {
     if (!selectedMethod || !connection.isConnected) {
       toast({
@@ -377,9 +478,20 @@ const Index = () => {
       const params = selectedMethodInputs.map((input: any, index: number) => {
         const paramValue = methodParameters[`param_${index}`] || '';
         
+        // Validate required parameters
+        if (!paramValue && input.type !== 'bool') {
+          throw new Error(`Tham số ${input.name || `#${index + 1}`} là bắt buộc`);
+        }
+        
         if (input.type === 'uint256' || input.type.startsWith('uint')) {
+          if (!/^\d+$/.test(paramValue)) {
+            throw new Error(`Tham số ${input.name || `#${index + 1}`} phải là số nguyên`);
+          }
           return paramValue;
         } else if (input.type === 'address') {
+          if (!paramValue.match(/^0x[a-fA-F0-9]{40}$/)) {
+            throw new Error(`Tham số ${input.name || `#${index + 1}`} không phải địa chỉ hợp lệ`);
+          }
           return paramValue;
         } else if (input.type === 'bool') {
           return paramValue.toLowerCase() === 'true';
@@ -387,38 +499,40 @@ const Index = () => {
         return paramValue;
       });
 
-      // Simulate execution
-      await new Promise(resolve => setTimeout(resolve, isReadMethod ? 1000 : 2000));
+      console.log(`Executing ${selectedMethod.name} with parameters:`, params);
+
+      // Call the simulated blockchain method
+      const result = await simulateBlockchainCall(selectedMethod, params);
       
-      let result;
-      if (isReadMethod) {
-        // Simulate read results
-        if (selectedMethod.name === 'name' || selectedMethod.name === 'symbol') {
-          result = selectedMethod.name === 'name' ? 'Demo Token' : 'DEMO';
-        } else if (selectedMethod.name === 'totalSupply' || selectedMethod.name === 'balanceOf') {
-          result = '1000000000000000000000'; // 1000 tokens with 18 decimals
-        } else {
-          result = 'Success';
-        }
-      } else {
-        // Simulate transaction hash for write methods
-        result = '0x' + Math.random().toString(16).substr(2, 64);
-      }
+      const formattedResult = formatMethodResult(selectedMethod, result);
 
       setMethodResult({
         method: selectedMethod.name,
-        result: result,
+        result: formattedResult,
+        rawResult: result,
         type: isReadMethod ? 'read' : 'write',
         gasUsed: isReadMethod ? undefined : gasLimit,
-        gasPrice: isReadMethod ? undefined : (gasPrice || '20')
+        gasPrice: isReadMethod ? undefined : (gasPrice || '20'),
+        timestamp: new Date().toISOString()
       });
 
       toast({
         title: isReadMethod ? "Đọc dữ liệu thành công" : "Giao dịch thành công",
-        description: `${selectedMethod.name}: ${result}`,
+        description: `${selectedMethod.name}: ${formattedResult}`,
       });
 
     } catch (error) {
+      console.error('Method execution error:', error);
+      
+      setMethodResult({
+        method: selectedMethod.name,
+        result: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        rawResult: null,
+        type: isReadMethod ? 'read' : 'write',
+        error: true,
+        timestamp: new Date().toISOString()
+      });
+
       toast({
         title: isReadMethod ? "Lỗi khi đọc dữ liệu" : "Giao dịch thất bại",
         description: error instanceof Error ? error.message : "Có lỗi xảy ra",
@@ -818,23 +932,50 @@ const Index = () => {
                           )}
                         </Button>
 
-                        {/* Method Results */}
+                        {/* Enhanced Method Results */}
                         {methodResult && (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-sm">Kết quả: {methodResult.method}</h5>
-                              <Badge variant="outline" className={methodResult.type === 'read' ? 'border-blue-300 text-blue-700' : 'border-green-300 text-green-700'}>
-                                {methodResult.type.toUpperCase()}
-                              </Badge>
-                            </div>
-                            <p className="text-sm font-mono break-all bg-white p-2 rounded border">
-                              {methodResult.result}
-                            </p>
-                            {methodResult.type === 'write' && (
-                              <div className="mt-2 text-xs text-gray-600">
-                                Gas Used: {methodResult.gasUsed} | Gas Price: {methodResult.gasPrice} Gwei
+                          <div className={`p-4 border rounded-lg ${methodResult.error ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-sm flex items-center space-x-2">
+                                <span>Kết quả: {methodResult.method}</span>
+                                {methodResult.error && <AlertCircle className="w-4 h-4 text-red-600" />}
+                              </h5>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="outline" className={methodResult.type === 'read' ? 'border-blue-300 text-blue-700' : 'border-green-300 text-green-700'}>
+                                  {methodResult.type.toUpperCase()}
+                                </Badge>
+                                {methodResult.error && (
+                                  <Badge variant="outline" className="border-red-300 text-red-700">
+                                    ERROR
+                                  </Badge>
+                                )}
                               </div>
-                            )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div>
+                                <Label className="text-xs text-gray-600">Kết quả:</Label>
+                                <p className={`text-sm font-mono break-all bg-white p-3 rounded border ${methodResult.error ? 'text-red-700 border-red-200' : ''}`}>
+                                  {methodResult.result}
+                                </p>
+                              </div>
+                              
+                              {methodResult.rawResult && !methodResult.error && (
+                                <div>
+                                  <Label className="text-xs text-gray-600">Giá trị thô:</Label>
+                                  <p className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded border break-all">
+                                    {methodResult.rawResult}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t">
+                                <span>Thời gian: {new Date(methodResult.timestamp).toLocaleString('vi-VN')}</span>
+                                {methodResult.type === 'write' && !methodResult.error && (
+                                  <span>Gas: {methodResult.gasUsed} | {methodResult.gasPrice} Gwei</span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
