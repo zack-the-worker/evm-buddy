@@ -167,6 +167,90 @@ const Index = () => {
     return networks[chainId] || `Unknown Network (${chainId})`;
   };
 
+  // Auto-connect to RPC when URL changes
+  useEffect(() => {
+    const autoConnect = async () => {
+      if (!rpcUrl.trim()) {
+        setConnection({
+          rpcUrl: '',
+          chainId: null,
+          isConnected: false,
+          networkName: ''
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'eth_chainId',
+            params: [],
+            id: 1
+          })
+        });
+
+        if (!response.ok) throw new Error('Không thể kết nối RPC');
+
+        const data = await response.json();
+        const chainId = parseInt(data.result, 16);
+        const networkName = getNetworkName(chainId);
+
+        setConnection({
+          rpcUrl,
+          chainId,
+          isConnected: true,
+          networkName
+        });
+
+      } catch (error) {
+        setConnection({
+          rpcUrl: '',
+          chainId: null,
+          isConnected: false,
+          networkName: ''
+        });
+      }
+    };
+
+    const debounceTimer = setTimeout(autoConnect, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [rpcUrl]);
+
+  // Auto-load contract when address and ABI change
+  useEffect(() => {
+    const autoLoadContract = () => {
+      if (!contractAddress.trim() || !abiInput.trim()) {
+        setContract({
+          address: '',
+          abi: [],
+          isLoaded: false
+        });
+        return;
+      }
+
+      try {
+        const abi = JSON.parse(abiInput);
+        setContract({
+          address: contractAddress,
+          abi,
+          isLoaded: true
+        });
+      } catch (error) {
+        setContract({
+          address: '',
+          abi: [],
+          isLoaded: false
+        });
+      }
+    };
+
+    const debounceTimer = setTimeout(autoLoadContract, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [contractAddress, abiInput]);
+
   const connectToRPC = async () => {
     if (!rpcUrl.trim()) {
       toast({
@@ -361,6 +445,116 @@ const Index = () => {
     }));
   };
 
+  // Helper function to format values based on type
+  const formatValueByType = (value: any, type: string, name: string = ''): string => {
+    if (value === null || value === undefined) return 'null';
+    
+    switch (type) {
+      case 'uint256':
+      case 'uint':
+        // Special formatting for common token fields
+        if (['price', 'mintFee'].includes(name) && typeof value === 'bigint') {
+          const ethValue = Number(value) / 1e18;
+          return `${ethValue} ETH (${value.toString()} wei)`;
+        }
+        return typeof value === 'bigint' ? value.toString() : value.toString();
+      
+      case 'uint80':
+      case 'uint32':
+      case 'uint24':
+      case 'uint96':
+        return typeof value === 'bigint' ? value.toString() : value.toString();
+      
+      case 'string':
+        return value.toString();
+      
+      case 'bool':
+        return value ? 'true' : 'false';
+      
+      case 'address':
+        return value.toString();
+      
+      case 'bytes32':
+        return value.toString();
+      
+      default:
+        if (typeof value === 'bigint') {
+          return value.toString();
+        }
+        return value.toString();
+    }
+  };
+
+  // Helper function to format timestamp
+  const formatTimestamp = (timestamp: any): string => {
+    const ts = typeof timestamp === 'bigint' ? Number(timestamp) : Number(timestamp);
+    if (ts === 0) return '0 (Not set)';
+    return `${new Date(ts * 1000).toLocaleString('vi-VN')} (${ts})`;
+  };
+
+  // Parse and format method result based on ABI output definition
+  const parseMethodResult = (method: any, rawResult: any): string => {
+    if (!method.outputs || method.outputs.length === 0) {
+      return 'No return value';
+    }
+
+    const output = method.outputs[0];
+    
+    try {
+      if (output.type === 'tuple') {
+        // Handle complex struct/tuple results
+        const components = output.components || [];
+        let formatted = '';
+        
+        // rawResult should be an array for tuple types
+        if (Array.isArray(rawResult)) {
+          components.forEach((component: any, index: number) => {
+            const value = rawResult[index];
+            let formattedValue;
+            
+            if (component.type === 'tuple[]') {
+              // Handle array of structs (like stages)
+              formattedValue = '\n';
+              if (Array.isArray(value)) {
+                value.forEach((item: any, itemIndex: number) => {
+                  formattedValue += `  [${itemIndex}]:\n`;
+                  component.components.forEach((subComponent: any, subIndex: number) => {
+                    const subValue = Array.isArray(item) ? item[subIndex] : item?.[subComponent.name];
+                    let subFormattedValue = formatValueByType(subValue, subComponent.type, subComponent.name);
+                    
+                    // Special formatting for timestamps
+                    if (['startTimeUnixSeconds', 'endTimeUnixSeconds'].includes(subComponent.name)) {
+                      subFormattedValue = formatTimestamp(subValue);
+                    }
+                    
+                    formattedValue += `    ${subComponent.name}: ${subFormattedValue}\n`;
+                  });
+                });
+              }
+            } else {
+              formattedValue = formatValueByType(value, component.type, component.name);
+              
+              // Special formatting for timestamps
+              if (['startTimeUnixSeconds', 'endTimeUnixSeconds'].includes(component.name)) {
+                formattedValue = formatTimestamp(value);
+              }
+            }
+            
+            formatted += `${component.name}: ${formattedValue}\n`;
+          });
+        }
+        
+        return formatted.trim();
+      } else {
+        // Handle simple types
+        return formatValueByType(rawResult, output.type, method.name);
+      }
+    } catch (error) {
+      console.error('Error parsing method result:', error);
+      return `Raw result: ${rawResult}`;
+    }
+  };
+
   // Real blockchain call function for READ methods
   const executeRealBlockchainCall = async (method: any, params: any[]): Promise<any> => {
     if (!connection.isConnected) {
@@ -419,15 +613,8 @@ const Index = () => {
       // Use ethers to decode the result
       const decodedResult = iface.decodeFunctionResult(method.name, result);
       
-      // Return the first (and usually only) result value
-      const returnValue = decodedResult[0];
-      
-      // Convert BigInt to string for display
-      if (typeof returnValue === 'bigint') {
-        return returnValue.toString();
-      }
-      
-      return returnValue;
+      // Return the decoded result (can be array for tuple types)
+      return decodedResult.length === 1 ? decodedResult[0] : decodedResult;
 
     } catch (error) {
       console.error('Error in executeRealBlockchainCall:', error);
@@ -523,31 +710,8 @@ const Index = () => {
       return `Transaction Hash: ${result}`;
     }
     
-    // Format read method results based on return type
-    const outputType = method.outputs?.[0]?.type;
-    
-    switch (outputType) {
-      case 'uint256':
-        // Convert wei to readable format for token amounts
-        if (['totalSupply', 'balanceOf', 'allowance'].includes(method.name)) {
-          const value = BigInt(result);
-          const readable = (Number(value) / 1e18).toFixed(4);
-          return `${readable} tokens (${result} wei)`;
-        }
-        return result;
-      
-      case 'string':
-        return result;
-      
-      case 'bool':
-        return result ? 'true' : 'false';
-      
-      case 'address':
-        return result;
-      
-      default:
-        return result?.toString() || 'No return value';
-    }
+    // Use new parsing function for read methods
+    return parseMethodResult(method, result);
   };
 
   const executeSelectedMethod = async () => {
@@ -624,7 +788,7 @@ const Index = () => {
 
       toast({
         title: isReadMethod ? "Đọc dữ liệu thành công" : "Giao dịch thành công (Simulated)",
-        description: `${selectedMethod.name}: ${formattedResult}`,
+        description: `${selectedMethod.name}: Success`,
       });
 
     } catch (error) {
@@ -722,7 +886,7 @@ const Index = () => {
                   <Label htmlFor="preset-network">Mạng có sẵn</Label>
                   <Select onValueChange={(value) => {
                     const network = PRESET_NETWORKS.find(n => n.name === value);
-                    if (network) selectPresetNetwork(network);
+                    if (network) setRpcUrl(network.rpcUrl);
                   }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn mạng có sẵn" />
@@ -737,9 +901,9 @@ const Index = () => {
                   </Select>
                 </div>
 
-                {/* Custom RPC URL */}
+                {/* Custom RPC URL - Auto-connect */}
                 <div>
-                  <Label htmlFor="rpc-url">RPC URL</Label>
+                  <Label htmlFor="rpc-url">RPC URL (Tự động kết nối)</Label>
                   <Input
                     id="rpc-url"
                     value={rpcUrl}
@@ -765,34 +929,6 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Connect Button */}
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={connectToRPC} 
-                    disabled={isConnecting || !rpcUrl.trim()}
-                    className="flex-1"
-                  >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Đang kết nối...
-                      </>
-                    ) : (
-                      <>
-                        <Wifi className="w-4 h-4 mr-2" />
-                        Kết nối
-                      </>
-                    )}
-                  </Button>
-                  
-                  {connection.isConnected && (
-                    <Button variant="outline" onClick={disconnect}>
-                      <WifiOff className="w-4 h-4 mr-2" />
-                      Ngắt kết nối
-                    </Button>
-                  )}
-                </div>
-
                 <Separator />
 
                 {/* Wallet Address */}
@@ -809,15 +945,6 @@ const Index = () => {
                     Dùng để hiển thị số dư token và thông tin ví
                   </p>
                 </div>
-
-                <Button 
-                  onClick={handleWalletAddressSubmit}
-                  disabled={!walletAddress.trim()}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Cập nhật địa chỉ ví
-                </Button>
               </CardContent>
             </Card>
           </div>
@@ -832,9 +959,9 @@ const Index = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Contract Address */}
+                {/* Contract Address - Auto-load */}
                 <div>
-                  <Label htmlFor="contract-address">Địa chỉ Smart Contract</Label>
+                  <Label htmlFor="contract-address">Địa chỉ Smart Contract (Tự động tải)</Label>
                   <Input
                     id="contract-address"
                     value={contractAddress}
@@ -844,9 +971,9 @@ const Index = () => {
                   />
                 </div>
 
-                {/* ABI Input */}
+                {/* ABI Input - Auto-load */}
                 <div>
-                  <Label htmlFor="abi-input">ABI (Application Binary Interface)</Label>
+                  <Label htmlFor="abi-input">ABI (Tự động tải)</Label>
                   <Textarea
                     id="abi-input"
                     value={abiInput}
@@ -885,15 +1012,6 @@ const Index = () => {
                     Tải từ Explorer
                   </Button>
                 </div>
-
-                {/* Load Contract */}
-                <Button 
-                  onClick={loadContract}
-                  disabled={!contractAddress || !abiInput || !connection.isConnected}
-                  className="w-full"
-                >
-                  Tải Smart Contract
-                </Button>
 
                 {/* Contract Status */}
                 {contract.isLoaded && (
@@ -1061,17 +1179,19 @@ const Index = () => {
                             <div className="space-y-2">
                               <div>
                                 <Label className="text-xs text-gray-600">Kết quả:</Label>
-                                <p className={`text-sm font-mono break-all bg-white p-3 rounded border ${methodResult.error ? 'text-red-700 border-red-200' : ''}`}>
+                                <pre className={`text-sm font-mono break-all bg-white p-3 rounded border whitespace-pre-wrap ${methodResult.error ? 'text-red-700 border-red-200' : ''}`}>
                                   {methodResult.result}
-                                </p>
+                                </pre>
                               </div>
                               
                               {methodResult.rawResult && !methodResult.error && (
                                 <div>
                                   <Label className="text-xs text-gray-600">Giá trị thô:</Label>
-                                  <p className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded border break-all">
-                                    {methodResult.rawResult}
-                                  </p>
+                                  <pre className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded border break-all whitespace-pre-wrap">
+                                    {JSON.stringify(methodResult.rawResult, (key, value) => 
+                                      typeof value === 'bigint' ? value.toString() : value, 2
+                                    )}
+                                  </pre>
                                 </div>
                               )}
                               
