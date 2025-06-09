@@ -65,8 +65,8 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
   const savePreset = (name: string, overwrite: boolean = false) => {
     if (!name.trim()) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập tên preset",
+        title: "Error",
+        description: "Please enter preset name",
         variant: "destructive"
       });
       return;
@@ -95,14 +95,14 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
     if (existingPreset) {
       setPresets(prev => prev.map(p => p.id === existingPreset.id ? newPreset : p));
       toast({
-        title: "Preset đã được cập nhật",
-        description: `"${name}" đã được cập nhật`
+        title: "Preset Updated",
+        description: `"${name}" has been updated`
       });
     } else {
       setPresets(prev => [...prev, newPreset]);
       toast({
-        title: "Preset đã được lưu",
-        description: `"${name}" đã được lưu thành công`
+        title: "Preset Saved",
+        description: `"${name}" has been saved successfully`
       });
     }
 
@@ -116,8 +116,8 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
     if (preset) {
       onLoadPreset(preset);
       toast({
-        title: "Preset đã được tải",
-        description: `"${preset.name}" đã được áp dụng`
+        title: "Preset Loaded",
+        description: `"${preset.name}" has been applied`
       });
     }
   };
@@ -126,8 +126,8 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
     const preset = presets.find(p => p.id === id);
     setPresets(prev => prev.filter(p => p.id !== id));
     toast({
-      title: "Preset đã được xóa",
-      description: preset ? `"${preset.name}" đã được xóa` : "Preset đã được xóa"
+      title: "Preset Deleted",
+      description: preset ? `"${preset.name}" has been deleted` : "Preset has been deleted"
     });
   };
 
@@ -141,8 +141,8 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
     setEditName('');
     
     toast({
-      title: "Tên preset đã được cập nhật",
-      description: `Đã đổi tên thành "${newName}"`
+      title: "Preset Name Updated",
+      description: `Renamed to "${newName}"`
     });
   };
 
@@ -155,7 +155,7 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
             <Label htmlFor="preset-select" className="text-sm font-medium">Load Preset</Label>
             <Select value={selectedPresetId} onValueChange={setSelectedPresetId}>
               <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Chọn preset để tải" />
+                <SelectValue placeholder="Choose preset to load" />
               </SelectTrigger>
               <SelectContent className="bg-white border shadow-lg z-50">
                 {presets.map((preset) => (
@@ -188,24 +188,24 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Lưu Preset</DialogTitle>
+                <DialogTitle>Save Preset</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="preset-name">Tên Preset</Label>
+                  <Label htmlFor="preset-name">Preset Name</Label>
                   <Input
                     id="preset-name"
                     value={newPresetName}
                     onChange={(e) => setNewPresetName(e.target.value)}
-                    placeholder="Nhập tên preset"
+                    placeholder="Enter preset name"
                   />
                 </div>
                 <div className="flex space-x-2">
                   <Button onClick={() => savePreset(newPresetName)} className="flex-1">
-                    Lưu
+                    Save
                   </Button>
                   <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>
-                    Hủy
+                    Cancel
                   </Button>
                 </div>
               </div>
@@ -217,16 +217,16 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
             <DialogTrigger asChild>
               <Button size="sm" variant="outline" className="mt-6">
                 <Settings className="w-4 h-4 mr-2" />
-                Quản lý Preset
+                Manage Presets
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Quản lý Preset</DialogTitle>
+                <DialogTitle>Manage Presets</DialogTitle>
               </DialogHeader>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {presets.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">Chưa có preset nào</p>
+                  <p className="text-gray-500 text-center py-4">No presets yet</p>
                 ) : (
                   presets.map((preset) => (
                     <div key={preset.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -239,17 +239,17 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
                               className="flex-1"
                             />
                             <Button size="sm" onClick={() => updatePresetName(preset.id, editName)}>
-                              Lưu
+                              Save
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setEditingPreset(null)}>
-                              Hủy
+                              Cancel
                             </Button>
                           </div>
                         ) : (
                           <div>
                             <h4 className="font-medium">{preset.name}</h4>
                             <p className="text-xs text-gray-500">
-                              {new Date(preset.createdAt).toLocaleDateString('vi-VN')}
+                              {new Date(preset.createdAt).toLocaleDateString('en-US')}
                             </p>
                           </div>
                         )}
@@ -289,16 +289,16 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
         <Dialog open={isOverwriteDialogOpen} onOpenChange={setIsOverwriteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Xác nhận ghi đè</DialogTitle>
+              <DialogTitle>Confirm Overwrite</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p>Preset "{overwritePresetName}" đã tồn tại. Bạn có muốn ghi đè không?</p>
+              <p>Preset "{overwritePresetName}" already exists. Do you want to overwrite it?</p>
               <div className="flex space-x-2">
                 <Button onClick={() => savePreset(overwritePresetName, true)} className="flex-1">
-                  Ghi đè
+                  Overwrite
                 </Button>
                 <Button variant="outline" onClick={() => setIsOverwriteDialogOpen(false)}>
-                  Hủy
+                  Cancel
                 </Button>
               </div>
             </div>

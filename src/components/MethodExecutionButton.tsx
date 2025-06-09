@@ -32,12 +32,12 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
         {isExecuting ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Đang thực hiện...
+            Executing...
           </>
         ) : (
           <>
             <Send className="w-4 h-4 mr-2" />
-            Gọi Method
+            Call Method
           </>
         )}
       </Button>
@@ -63,7 +63,7 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
             disabled={isExecuting || isEstimatingGas}
           >
             <Send className="w-4 h-4 mr-2" />
-            Gọi Method
+            Call Method
           </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={() => {

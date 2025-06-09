@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ethers } from 'ethers';
 import PresetManagement from '@/components/PresetManagement';
 import MethodExecutionButton from '@/components/MethodExecutionButton';
+import WalletConnection from '@/components/WalletConnection';
 import { 
   Wallet, 
   Code, 
@@ -40,6 +41,13 @@ interface ContractState {
   address: string;
   abi: any[];
   isLoaded: boolean;
+}
+
+interface WalletInfo {
+  address: string;
+  balance: string;
+  isConnected: boolean;
+  connectionType: 'private-key' | 'web3-wallet' | null;
 }
 
 const PRESET_NETWORKS = [
@@ -132,8 +140,14 @@ const Index = () => {
     networkName: ''
   });
   const [rpcUrl, setRpcUrl] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
+  
+  // Wallet State
+  const [walletInfo, setWalletInfo] = useState<WalletInfo>({
+    address: '',
+    balance: '',
+    isConnected: false,
+    connectionType: null
+  });
 
   // Smart Contract State
   const [contract, setContract] = useState<ContractState>({
@@ -197,7 +211,7 @@ const Index = () => {
           })
         });
 
-        if (!response.ok) throw new Error('Không thể kết nối RPC');
+        if (!response.ok) throw new Error('Cannot connect to RPC');
 
         const data = await response.json();
         const chainId = parseInt(data.result, 16);
@@ -259,8 +273,8 @@ const Index = () => {
   const connectToRPC = async () => {
     if (!rpcUrl.trim()) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập RPC URL",
+        title: "Error",
+        description: "Please enter RPC URL",
         variant: "destructive"
       });
       return;
@@ -279,7 +293,7 @@ const Index = () => {
         })
       });
 
-      if (!response.ok) throw new Error('Không thể kết nối RPC');
+      if (!response.ok) throw new Error('Cannot connect to RPC');
 
       const data = await response.json();
       const chainId = parseInt(data.result, 16);
@@ -294,14 +308,14 @@ const Index = () => {
 
       setConnection(newConnection);
       toast({
-        title: "Kết nối thành công",
-        description: `Đã kết nối với ${networkName} (Chain ID: ${chainId})`,
+        title: "Connected",
+        description: `Connected to ${networkName} (Chain ID: ${chainId})`,
       });
 
     } catch (error) {
       toast({
-        title: "Kết nối thất bại",
-        description: "Không thể kết nối đến RPC URL",
+        title: "Connection failed",
+        description: "Cannot connect to RPC URL",
         variant: "destructive"
       });
     } finally {
@@ -318,8 +332,8 @@ const Index = () => {
     });
     setRpcUrl('');
     toast({
-      title: "Đã ngắt kết nối",
-      description: "Đã ngắt kết nối khỏi blockchain"
+      title: "Disconnected",
+      description: "Disconnected from blockchain"
     });
   };
 
@@ -330,13 +344,13 @@ const Index = () => {
   const handleWalletAddressSubmit = () => {
     if (walletAddress && /^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
       toast({
-        title: "Địa chỉ ví đã được cập nhật",
+        title: "Wallet address updated",
         description: walletAddress
       });
     } else {
       toast({
-        title: "Lỗi",
-        description: "Địa chỉ ví không hợp lệ",
+        title: "Error",
+        description: "Invalid wallet address",
         variant: "destructive"
       });
     }
@@ -352,8 +366,8 @@ const Index = () => {
           setAbiInput(JSON.stringify(abi, null, 2));
         } catch (error) {
           toast({
-            title: "Lỗi",
-            description: "File ABI không hợp lệ",
+            title: "Error",
+            description: "Invalid ABI file",
             variant: "destructive"
           });
         }
@@ -365,8 +379,8 @@ const Index = () => {
   const loadABIFromExplorer = async () => {
     if (!contractAddress) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập địa chỉ contract",
+        title: "Error",
+        description: "Please enter contract address",
         variant: "destructive"
       });
       return;
@@ -378,13 +392,13 @@ const Index = () => {
       setAbiInput(JSON.stringify(sampleABI, null, 2));
       
       toast({
-        title: "Thành công",
-        description: "Đã tải ABI từ explorer (demo)",
+        title: "Success",
+        description: "ABI loaded from explorer (demo)",
       });
     } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "Không thể tải ABI từ explorer",
+        title: "Error",
+        description: "Cannot load ABI from explorer",
         variant: "destructive"
       });
     } finally {
@@ -395,8 +409,8 @@ const Index = () => {
   const loadContract = () => {
     if (!contractAddress || !abiInput) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập địa chỉ contract và ABI",
+        title: "Error",
+        description: "Please enter contract address and ABI",
         variant: "destructive"
       });
       return;
@@ -411,13 +425,13 @@ const Index = () => {
       };
       setContract(newContract);
       toast({
-        title: "Smart Contract đã được tải",
-        description: `Địa chỉ: ${contractAddress}`,
+        title: "Smart Contract loaded",
+        description: `Address: ${contractAddress}`,
       });
     } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "ABI không hợp lệ",
+        title: "Error",
+        description: "Invalid ABI",
         variant: "destructive"
       });
     }
@@ -722,8 +736,8 @@ const Index = () => {
   const executeSelectedMethod = async () => {
     if (!selectedMethod || !connection.isConnected) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng chọn method và kết nối RPC",
+        title: "Error",
+        description: "Please select a method and connect to RPC",
         variant: "destructive"
       });
       return;
@@ -731,10 +745,10 @@ const Index = () => {
 
     const isReadMethod = selectedMethod.stateMutability === 'view' || selectedMethod.stateMutability === 'pure';
     
-    if (!isReadMethod && !walletAddress) {
+    if (!isReadMethod && !walletInfo.isConnected) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập địa chỉ ví cho WRITE method",
+        title: "Error",
+        description: "Please enter wallet address for WRITE method",
         variant: "destructive"
       });
       return;
@@ -748,17 +762,17 @@ const Index = () => {
         
         // Validate required parameters
         if (!paramValue && input.type !== 'bool') {
-          throw new Error(`Tham số ${input.name || `#${index + 1}`} là bắt buộc`);
+          throw new Error(`Parameter ${input.name || `#${index + 1}`} is required`);
         }
         
         if (input.type === 'uint256' || input.type.startsWith('uint')) {
           if (!/^\d+$/.test(paramValue)) {
-            throw new Error(`Tham số ${input.name || `#${index + 1}`} phải là số nguyên`);
+            throw new Error(`Parameter ${input.name || `#${index + 1}`} must be an integer`);
           }
           return paramValue;
         } else if (input.type === 'address') {
           if (!paramValue.match(/^0x[a-fA-F0-9]{40}$/)) {
-            throw new Error(`Tham số ${input.name || `#${index + 1}`} không phải địa chỉ hợp lệ`);
+            throw new Error(`Parameter ${input.name || `#${index + 1}`} is not a valid address`);
           }
           return paramValue;
         } else if (input.type === 'bool') {
@@ -792,7 +806,7 @@ const Index = () => {
       });
 
       toast({
-        title: isReadMethod ? "Đọc dữ liệu thành công" : "Giao dịch thành công (Simulated)",
+        title: isReadMethod ? "Read successful" : "Transaction successful (Simulated)",
         description: `${selectedMethod.name}: Success`,
       });
 
@@ -809,8 +823,8 @@ const Index = () => {
       });
 
       toast({
-        title: isReadMethod ? "Lỗi khi đọc dữ liệu" : "Giao dịch thất bại",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        title: isReadMethod ? "Error reading data" : "Transaction failed",
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive"
       });
     } finally {
@@ -842,7 +856,7 @@ const Index = () => {
               to: contract.address,
               data: callData,
               value: ethValue !== '0' ? `0x${BigInt(ethers.parseEther(ethValue)).toString(16)}` : undefined,
-              from: walletAddress || undefined
+              from: walletInfo.address || undefined
             }
           ],
           id: Date.now()
@@ -893,8 +907,8 @@ const Index = () => {
   const handleEstimateGas = async () => {
     if (!selectedMethod || !connection.isConnected) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng chọn method và kết nối RPC",
+        title: "Error",
+        description: "Please select a method and connect to RPC",
         variant: "destructive"
       });
       return;
@@ -907,17 +921,17 @@ const Index = () => {
         const paramValue = methodParameters[`param_${index}`] || '';
         
         if (!paramValue && input.type !== 'bool') {
-          throw new Error(`Tham số ${input.name || `#${index + 1}`} là bắt buộc`);
+          throw new Error(`Parameter ${input.name || `#${index + 1}`} is required`);
         }
         
         if (input.type === 'uint256' || input.type.startsWith('uint')) {
           if (!/^\d+$/.test(paramValue)) {
-            throw new Error(`Tham số ${input.name || `#${index + 1}`} phải là số nguyên`);
+            throw new Error(`Parameter ${input.name || `#${index + 1}`} must be an integer`);
           }
           return paramValue;
         } else if (input.type === 'address') {
           if (!paramValue.match(/^0x[a-fA-F0-9]{40}$/)) {
-            throw new Error(`Tham số ${input.name || `#${index + 1}`} không phải địa chỉ hợp lệ`);
+            throw new Error(`Parameter ${input.name || `#${index + 1}`} is not a valid address`);
           }
           return paramValue;
         } else if (input.type === 'bool') {
@@ -932,15 +946,15 @@ const Index = () => {
       setGasPrice(gasEstimate.gasPrice);
 
       toast({
-        title: "Gas đã được ước tính",
+        title: "Gas estimated",
         description: `Gas Limit: ${gasEstimate.gasLimit}, Gas Price: ${gasEstimate.gasPrice} Gwei`,
       });
 
     } catch (error) {
       console.error('Gas estimation error:', error);
       toast({
-        title: "Lỗi ước tính gas",
-        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        title: "Error estimating gas",
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive"
       });
     } finally {
@@ -953,7 +967,6 @@ const Index = () => {
     setRpcUrl(preset.rpcUrl);
     setContractAddress(preset.contractAddress);
     setAbiInput(preset.abi);
-    setWalletAddress(preset.walletAddress);
     setGasLimit(preset.gasLimit);
     setGasPrice(preset.gasPrice);
   };
@@ -962,7 +975,7 @@ const Index = () => {
     rpcUrl,
     contractAddress,
     abi: abiInput,
-    walletAddress,
+    walletAddress: walletInfo.address,
     gasLimit,
     gasPrice
   });
@@ -993,7 +1006,7 @@ const Index = () => {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Smart Contract Communicator
                 </h1>
-                <p className="text-sm text-gray-500">Tương tác với Smart Contract trên EVM</p>
+                <p className="text-sm text-gray-500">Interact with Smart Contracts on EVM</p>
               </div>
             </div>
             
@@ -1007,14 +1020,14 @@ const Index = () => {
               ) : (
                 <Badge variant="outline" className="text-gray-500">
                   <AlertCircle className="w-3 h-3 mr-1" />
-                  Chưa kết nối
+                  Not Connected
                 </Badge>
               )}
               
-              {walletAddress && (
+              {walletInfo.isConnected && (
                 <Badge variant="outline" className="font-mono text-xs">
                   <Wallet className="w-3 h-3 mr-1" />
-                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  {walletInfo.address.slice(0, 6)}...{walletInfo.address.slice(-4)}
                 </Badge>
               )}
             </div>
@@ -1031,25 +1044,26 @@ const Index = () => {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - RPC Connection */}
+          {/* Left Column - RPC Connection & Wallet */}
           <div className="space-y-6">
+            {/* RPC Connection */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center space-x-2">
                   <Globe className="w-5 h-5 text-blue-600" />
-                  <span>Kết nối RPC</span>
+                  <span>RPC Connection</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Preset Networks */}
                 <div>
-                  <Label htmlFor="preset-network">Mạng có sẵn</Label>
+                  <Label htmlFor="preset-network">Preset Networks</Label>
                   <Select onValueChange={(value) => {
                     const network = PRESET_NETWORKS.find(n => n.name === value);
                     if (network) setRpcUrl(network.rpcUrl);
                   }}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn mạng có sẵn" />
+                      <SelectValue placeholder="Select preset network" />
                     </SelectTrigger>
                     <SelectContent>
                       {PRESET_NETWORKS.map((network) => (
@@ -1063,7 +1077,7 @@ const Index = () => {
 
                 {/* Custom RPC URL - Auto-connect */}
                 <div>
-                  <Label htmlFor="rpc-url">RPC URL (Tự động kết nối)</Label>
+                  <Label htmlFor="rpc-url">RPC URL (Auto-connect)</Label>
                   <Input
                     id="rpc-url"
                     value={rpcUrl}
@@ -1079,7 +1093,7 @@ const Index = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Wifi className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">Đã kết nối</span>
+                        <span className="text-sm font-medium text-green-800">Connected</span>
                       </div>
                       <Badge variant="outline" className="text-green-700 border-green-300">
                         Chain ID: {connection.chainId}
@@ -1088,25 +1102,14 @@ const Index = () => {
                     <p className="text-sm text-green-700 mt-1">{connection.networkName}</p>
                   </div>
                 )}
-
-                <Separator />
-
-                {/* Wallet Address */}
-                <div>
-                  <Label htmlFor="wallet-address">Địa chỉ ví (tùy chọn)</Label>
-                  <Input
-                    id="wallet-address"
-                    value={walletAddress}
-                    onChange={(e) => setWalletAddress(e.target.value)}
-                    placeholder="0x742d35Cc6435C14C5f2f6e32f3e1a93b71A2c11C"
-                    className="font-mono text-sm"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Dùng để hiển thị số dư token và thông tin ví
-                  </p>
-                </div>
               </CardContent>
             </Card>
+
+            {/* Wallet Connection */}
+            <WalletConnection 
+              onWalletChange={setWalletInfo}
+              rpcUrl={rpcUrl}
+            />
           </div>
 
           {/* Right Column - Smart Contract */}
@@ -1121,7 +1124,7 @@ const Index = () => {
               <CardContent className="space-y-4">
                 {/* Contract Address - Auto-load */}
                 <div>
-                  <Label htmlFor="contract-address">Địa chỉ Smart Contract (Tự động tải)</Label>
+                  <Label htmlFor="contract-address">Contract Address (Auto-load)</Label>
                   <Input
                     id="contract-address"
                     value={contractAddress}
@@ -1133,12 +1136,12 @@ const Index = () => {
 
                 {/* ABI Input - Auto-load */}
                 <div>
-                  <Label htmlFor="abi-input">ABI (Tự động tải)</Label>
+                  <Label htmlFor="abi-input">ABI (Auto-load)</Label>
                   <Textarea
                     id="abi-input"
                     value={abiInput}
                     onChange={(e) => setAbiInput(e.target.value)}
-                    placeholder="Dán ABI JSON hoặc tải từ file..."
+                    placeholder="Paste ABI JSON or load from file..."
                     className="h-32 font-mono text-xs"
                   />
                 </div>
@@ -1154,7 +1157,7 @@ const Index = () => {
                     />
                     <Button variant="outline" size="sm">
                       <Upload className="w-4 h-4 mr-2" />
-                      Tải từ file
+                      Load from file
                     </Button>
                   </div>
                   
@@ -1169,7 +1172,7 @@ const Index = () => {
                     ) : (
                       <ExternalLink className="w-4 h-4 mr-2" />
                     )}
-                    Tải từ Explorer
+                    Load from Explorer
                   </Button>
                 </div>
 
@@ -1178,7 +1181,7 @@ const Index = () => {
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="text-green-700 border-green-300">
-                        Contract đã tải
+                        Contract loaded
                       </Badge>
                     </div>
                     <p className="text-xs text-green-700 mt-1 font-mono">{contract.address}</p>
@@ -1195,16 +1198,16 @@ const Index = () => {
                     <div>
                       <h4 className="font-medium mb-3 flex items-center space-x-2">
                         <Send className="w-4 h-4 text-purple-600" />
-                        <span>Thực hiện Method</span>
+                        <span>Execute Method</span>
                       </h4>
                       
                       {/* Method Selection */}
                       <div className="space-y-4">
                         <div>
-                          <Label htmlFor="method-select">Chọn Method</Label>
+                          <Label htmlFor="method-select">Select Method</Label>
                           <Select value={selectedMethodName} onValueChange={handleMethodSelect}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Chọn method để thực hiện" />
+                              <SelectValue placeholder="Select method to execute" />
                             </SelectTrigger>
                             <SelectContent className="bg-white border shadow-lg z-50">
                               {readMethods.length > 0 && (
@@ -1247,19 +1250,19 @@ const Index = () => {
                         {/* Method Parameters */}
                         {selectedMethod && selectedMethodInputs.length > 0 && (
                           <div>
-                            <Label>Tham số của Method</Label>
+                            <Label>Method Parameters</Label>
                             <div className="space-y-3 mt-2">
                               {selectedMethodInputs.map((input: any, index: number) => (
                                 <div key={index} className="space-y-1">
                                   <Label htmlFor={`param-${index}`} className="text-sm">
-                                    {input.name || `Tham số ${index + 1}`} 
+                                    {input.name || `Parameter ${index + 1}`} 
                                     <span className="text-gray-500 ml-1">({input.type})</span>
                                   </Label>
                                   <Input
                                     id={`param-${index}`}
                                     value={methodParameters[`param_${index}`] || ''}
                                     onChange={(e) => updateParameter(index, e.target.value)}
-                                    placeholder={`Nhập giá trị ${input.type}`}
+                                    placeholder={`Enter value ${input.type}`}
                                     className="font-mono text-sm"
                                   />
                                 </div>
@@ -1271,11 +1274,11 @@ const Index = () => {
                         {/* ETH Value for WRITE methods */}
                         {selectedMethod && (selectedMethod.stateMutability === 'nonpayable' || selectedMethod.stateMutability === 'payable') && (
                           <div className="space-y-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <Label className="text-sm font-medium">Cài đặt Giao dịch (WRITE Method)</Label>
+                            <Label className="text-sm font-medium">Transaction Settings (WRITE Method)</Label>
                             
                             {/* ETH Value */}
                             <div>
-                              <Label htmlFor="eth-value" className="text-xs">ETH Value (số ETH gửi kèm)</Label>
+                              <Label htmlFor="eth-value" className="text-xs">ETH Value (ETH sent with transaction)</Label>
                               <Input
                                 id="eth-value"
                                 value={ethValue}
@@ -1331,12 +1334,12 @@ const Index = () => {
                             {isExecuting ? (
                               <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Đang thực hiện...
+                                Executing...
                               </>
                             ) : (
                               <>
                                 <Send className="w-4 h-4 mr-2" />
-                                Gọi Method
+                                Call Method
                               </>
                             )}
                           </Button>
@@ -1347,7 +1350,7 @@ const Index = () => {
                           <div className={`p-4 border rounded-lg ${methodResult.error ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
                             <div className="flex items-center justify-between mb-3">
                               <h5 className="font-medium text-sm flex items-center space-x-2">
-                                <span>Kết quả: {methodResult.method}</span>
+                                <span>Result: {methodResult.method}</span>
                                 {methodResult.error && <AlertCircle className="w-4 h-4 text-red-600" />}
                               </h5>
                               <div className="flex items-center space-x-2">
@@ -1364,7 +1367,7 @@ const Index = () => {
                             
                             <div className="space-y-2">
                               <div>
-                                <Label className="text-xs text-gray-600">Kết quả:</Label>
+                                <Label className="text-xs text-gray-600">Result:</Label>
                                 <pre className={`text-sm font-mono break-all bg-white p-3 rounded border whitespace-pre-wrap ${methodResult.error ? 'text-red-700 border-red-200' : ''}`}>
                                   {methodResult.result}
                                 </pre>
@@ -1372,7 +1375,7 @@ const Index = () => {
                               
                               {methodResult.rawResult && !methodResult.error && (
                                 <div>
-                                  <Label className="text-xs text-gray-600">Giá trị thô:</Label>
+                                  <Label className="text-xs text-gray-600">Raw Result:</Label>
                                   <pre className="text-xs font-mono text-gray-500 bg-gray-50 p-2 rounded border break-all whitespace-pre-wrap">
                                     {JSON.stringify(methodResult.rawResult, (key, value) => 
                                       typeof value === 'bigint' ? value.toString() : value, 2
@@ -1382,7 +1385,7 @@ const Index = () => {
                               )}
                               
                               <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t">
-                                <span>Thời gian: {new Date(methodResult.timestamp).toLocaleString('vi-VN')}</span>
+                                <span>Time: {new Date(methodResult.timestamp).toLocaleString('vi-VN')}</span>
                                 {methodResult.type === 'write' && !methodResult.error && (
                                   <span>Gas: {methodResult.gasUsed} | {methodResult.gasPrice} Gwei</span>
                                 )}
