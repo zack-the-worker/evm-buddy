@@ -22,12 +22,12 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex">
+    <div className="flex items-stretch">
       {/* Main button */}
       <Button 
         onClick={onExecute}
         disabled={disabled || isExecuting || isEstimatingGas}
-        className="flex-1 rounded-r-none border-r-0"
+        className="flex-1 rounded-r-none border-r-0 h-10"
       >
         {isExecuting ? (
           <>
@@ -47,8 +47,7 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
         <DropdownMenuTrigger asChild>
           <Button 
             variant="default" 
-            size="sm" 
-            className="px-2 rounded-l-none"
+            className="px-3 rounded-l-none h-10 min-w-[40px] flex items-center justify-center"
             disabled={disabled || isExecuting || isEstimatingGas}
           >
             <ChevronDown className="w-4 h-4" />

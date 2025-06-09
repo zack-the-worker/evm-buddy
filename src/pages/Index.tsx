@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -785,13 +784,30 @@ const Index = () => {
 
       console.log(`Executing ${selectedMethod.name} with parameters:`, params);
 
+      // Create the proper method signature for encoding
+      const methodSignature = {
+        name: selectedMethod.name,
+        type: 'function',
+        inputs: selectedMethod.inputs || [],
+        outputs: selectedMethod.outputs || [],
+        stateMutability: selectedMethod.stateMutability
+      };
+
       let result;
       if (isReadMethod) {
         // Use real RPC call for READ methods
-        result = await executeRealBlockchainCall(selectedMethod, params);
+        result = await executeRealBlockchainCall(methodSignature, params);
       } else {
+        // For WRITE methods, create proper transaction data
+        const iface = new ethers.Interface([methodSignature]);
+        const callData = iface.encodeFunctionData(selectedMethod.name, params);
+        
+        console.log(`WRITE method ${selectedMethod.name}:`);
+        console.log(`Method selector: ${callData.slice(0, 10)}`);
+        console.log(`Call data: ${callData}`);
+        
         // Use simulation for WRITE methods (until private key is implemented)
-        result = await simulateBlockchainCall(selectedMethod, params);
+        result = await simulateBlockchainCall(methodSignature, params);
       }
       
       const formattedResult = formatMethodResult(selectedMethod, result);
@@ -845,6 +861,8 @@ const Index = () => {
       const callData = iface.encodeFunctionData(method.name, params);
 
       console.log(`Estimating gas for ${method.name}:`, params);
+      console.log(`Method selector: ${callData.slice(0, 10)}`);
+      console.log(`Full call data: ${callData}`);
 
       // Estimate gas limit
       const gasLimitResponse = await fetch(connection.rpcUrl, {
@@ -942,7 +960,16 @@ const Index = () => {
         return paramValue;
       });
 
-      const gasEstimate = await estimateGasForMethod(selectedMethod, params);
+      // Create the proper method signature for gas estimation
+      const methodSignature = {
+        name: selectedMethod.name,
+        type: 'function',
+        inputs: selectedMethod.inputs || [],
+        outputs: selectedMethod.outputs || [],
+        stateMutability: selectedMethod.stateMutability
+      };
+
+      const gasEstimate = await estimateGasForMethod(methodSignature, params);
       
       setGasLimit(gasEstimate.gasLimit);
       setGasPrice(gasEstimate.gasPrice);
