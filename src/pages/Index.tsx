@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ethers } from 'ethers';
+import PresetManagement from '@/components/PresetManagement';
+import MethodExecutionButton from '@/components/MethodExecutionButton';
 import { 
   Wallet, 
   Code, 
@@ -148,12 +150,15 @@ const Index = () => {
   const [methodResult, setMethodResult] = useState<any>(null);
   const [gasLimit, setGasLimit] = useState('100000');
   const [gasPrice, setGasPrice] = useState('');
-  const [ethValue, setEthValue] = useState('0');
-
+  
   // New state for selected method and its parameters
   const [selectedMethodName, setSelectedMethodName] = useState<string>('');
   const [selectedMethodInputs, setSelectedMethodInputs] = useState<any[]>([]);
   const [methodParameters, setMethodParameters] = useState<{ [key: string]: string }>({});
+
+  // New state for ETH value and gas estimation
+  const [ethValue, setEthValue] = useState('0');
+  const [isEstimatingGas, setIsEstimatingGas] = useState(false);
 
   const getNetworkName = (chainId: number): string => {
     const networks: { [key: number]: string } = {
@@ -813,6 +818,155 @@ const Index = () => {
     }
   };
 
+  // Enhanced blockchain call function with gas estimation
+  const estimateGasForMethod = async (method: any, params: any[]): Promise<{ gasLimit: string; gasPrice: string }> => {
+    if (!connection.isConnected) {
+      throw new Error('Not connected to RPC');
+    }
+
+    try {
+      const iface = new ethers.Interface([method]);
+      const callData = iface.encodeFunctionData(method.name, params);
+
+      console.log(`Estimating gas for ${method.name}:`, params);
+
+      // Estimate gas limit
+      const gasLimitResponse = await fetch(connection.rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_estimateGas',
+          params: [
+            {
+              to: contract.address,
+              data: callData,
+              value: ethValue !== '0' ? `0x${BigInt(ethers.parseEther(ethValue)).toString(16)}` : undefined,
+              from: walletAddress || undefined
+            }
+          ],
+          id: Date.now()
+        })
+      });
+
+      if (!gasLimitResponse.ok) {
+        throw new Error(`Gas estimation failed: ${gasLimitResponse.statusText}`);
+      }
+
+      const gasLimitData = await gasLimitResponse.json();
+      
+      if (gasLimitData.error) {
+        throw new Error(`Gas estimation error: ${gasLimitData.error.message}`);
+      }
+
+      // Get current gas price
+      const gasPriceResponse = await fetch(connection.rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_gasPrice',
+          params: [],
+          id: Date.now() + 1
+        })
+      });
+
+      const gasPriceData = await gasPriceResponse.json();
+      const estimatedGasLimit = parseInt(gasLimitData.result, 16);
+      const currentGasPrice = gasPriceData.result ? parseInt(gasPriceData.result, 16) : 20000000000; // 20 Gwei fallback
+      
+      // Add 20% buffer to gas limit
+      const gasLimitWithBuffer = Math.floor(estimatedGasLimit * 1.2);
+      const gasPriceInGwei = Math.floor(currentGasPrice / 1000000000);
+
+      return {
+        gasLimit: gasLimitWithBuffer.toString(),
+        gasPrice: gasPriceInGwei.toString()
+      };
+
+    } catch (error) {
+      console.error('Error estimating gas:', error);
+      throw error;
+    }
+  };
+
+  const handleEstimateGas = async () => {
+    if (!selectedMethod || !connection.isConnected) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng chọn method và kết nối RPC",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsEstimatingGas(true);
+    try {
+      // Prepare method parameters
+      const params = selectedMethodInputs.map((input: any, index: number) => {
+        const paramValue = methodParameters[`param_${index}`] || '';
+        
+        if (!paramValue && input.type !== 'bool') {
+          throw new Error(`Tham số ${input.name || `#${index + 1}`} là bắt buộc`);
+        }
+        
+        if (input.type === 'uint256' || input.type.startsWith('uint')) {
+          if (!/^\d+$/.test(paramValue)) {
+            throw new Error(`Tham số ${input.name || `#${index + 1}`} phải là số nguyên`);
+          }
+          return paramValue;
+        } else if (input.type === 'address') {
+          if (!paramValue.match(/^0x[a-fA-F0-9]{40}$/)) {
+            throw new Error(`Tham số ${input.name || `#${index + 1}`} không phải địa chỉ hợp lệ`);
+          }
+          return paramValue;
+        } else if (input.type === 'bool') {
+          return paramValue.toLowerCase() === 'true';
+        }
+        return paramValue;
+      });
+
+      const gasEstimate = await estimateGasForMethod(selectedMethod, params);
+      
+      setGasLimit(gasEstimate.gasLimit);
+      setGasPrice(gasEstimate.gasPrice);
+
+      toast({
+        title: "Gas đã được ước tính",
+        description: `Gas Limit: ${gasEstimate.gasLimit}, Gas Price: ${gasEstimate.gasPrice} Gwei`,
+      });
+
+    } catch (error) {
+      console.error('Gas estimation error:', error);
+      toast({
+        title: "Lỗi ước tính gas",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        variant: "destructive"
+      });
+    } finally {
+      setIsEstimatingGas(false);
+    }
+  };
+
+  // Preset handling functions
+  const handleLoadPreset = (preset: any) => {
+    setRpcUrl(preset.rpcUrl);
+    setContractAddress(preset.contractAddress);
+    setAbiInput(preset.abi);
+    setWalletAddress(preset.walletAddress);
+    setGasLimit(preset.gasLimit);
+    setGasPrice(preset.gasPrice);
+  };
+
+  const getCurrentPresetData = () => ({
+    rpcUrl,
+    contractAddress,
+    abi: abiInput,
+    walletAddress,
+    gasLimit,
+    gasPrice
+  });
+
   const readMethods = contract.abi.filter(method => 
     method.type === 'function' && 
     (method.stateMutability === 'view' || method.stateMutability === 'pure')
@@ -870,6 +1024,12 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Preset Management */}
+        <PresetManagement 
+          onLoadPreset={handleLoadPreset}
+          currentData={getCurrentPresetData()}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - RPC Connection */}
           <div className="space-y-6">
@@ -1108,10 +1268,26 @@ const Index = () => {
                           </div>
                         )}
 
-                        {/* Gas Settings for WRITE methods */}
+                        {/* ETH Value for WRITE methods */}
                         {selectedMethod && (selectedMethod.stateMutability === 'nonpayable' || selectedMethod.stateMutability === 'payable') && (
                           <div className="space-y-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <Label className="text-sm font-medium">Cài đặt Gas (WRITE Method)</Label>
+                            <Label className="text-sm font-medium">Cài đặt Giao dịch (WRITE Method)</Label>
+                            
+                            {/* ETH Value */}
+                            <div>
+                              <Label htmlFor="eth-value" className="text-xs">ETH Value (số ETH gửi kèm)</Label>
+                              <Input
+                                id="eth-value"
+                                value={ethValue}
+                                onChange={(e) => setEthValue(e.target.value)}
+                                placeholder="0"
+                                className="text-sm"
+                                type="number"
+                                step="0.001"
+                                min="0"
+                              />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <Label htmlFor="gas-limit" className="text-xs">Gas Limit</Label>
@@ -1137,24 +1313,34 @@ const Index = () => {
                           </div>
                         )}
 
-                        {/* Execute Button */}
-                        <Button 
-                          onClick={executeSelectedMethod}
-                          disabled={!selectedMethod || isExecuting || !connection.isConnected}
-                          className="w-full"
-                        >
-                          {isExecuting ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Đang thực hiện...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4 mr-2" />
-                              Gọi Method
-                            </>
-                          )}
-                        </Button>
+                        {/* Execute Button with Dropdown */}
+                        {selectedMethod && (selectedMethod.stateMutability === 'nonpayable' || selectedMethod.stateMutability === 'payable') ? (
+                          <MethodExecutionButton
+                            onExecute={executeSelectedMethod}
+                            onEstimateGas={handleEstimateGas}
+                            isExecuting={isExecuting}
+                            isEstimatingGas={isEstimatingGas}
+                            disabled={!selectedMethod || !connection.isConnected}
+                          />
+                        ) : (
+                          <Button 
+                            onClick={executeSelectedMethod}
+                            disabled={!selectedMethod || isExecuting || !connection.isConnected}
+                            className="w-full"
+                          >
+                            {isExecuting ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Đang thực hiện...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4 mr-2" />
+                                Gọi Method
+                              </>
+                            )}
+                          </Button>
+                        )}
 
                         {/* Enhanced Method Results */}
                         {methodResult && (
