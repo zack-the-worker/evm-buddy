@@ -344,10 +344,10 @@ const Index = () => {
   };
 
   const handleWalletAddressSubmit = () => {
-    if (walletAddress && /^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+    if (walletInfo.address && /^0x[a-fA-F0-9]{40}$/.test(walletInfo.address)) {
       toast({
         title: "Wallet address updated",
-        description: walletAddress
+        description: walletInfo.address
       });
     } else {
       toast({
