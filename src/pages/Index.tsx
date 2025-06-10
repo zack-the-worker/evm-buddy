@@ -9,12 +9,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/sonner";
-import { WalletConnection } from "@/components/WalletConnection";
-import { RPCConnection } from "@/components/RPCConnection";
-import { SmartContractInteraction } from "@/components/SmartContractInteraction";
-import { TransactionHistory } from "@/components/TransactionHistory";
-import { TokenManager } from "@/components/TokenManager";
-import { PresetManager } from "@/components/PresetManager";
+import WalletConnection from "@/components/WalletConnection";
+import RPCConnection from "@/components/RPCConnection";
+import SmartContractInteraction from "@/components/SmartContractInteraction";
+import TransactionHistory from "@/components/TransactionHistory";
+import TokenManager from "@/components/TokenManager";
+import PresetManager from "@/components/PresetManager";
 import { 
   Code, 
   Play, 
@@ -182,7 +182,7 @@ const Index = () => {
       console.log(`Full call data: ${callData}`);
       
       const txParams: any = {
-        to: contract.address,
+        to: contract.target,
         data: callData,
         from: walletInfo.address || undefined
       };
@@ -337,8 +337,9 @@ const Index = () => {
 
   const filterMethods = useCallback(() => {
     if (!contract) return [];
-    return Object.keys(contract.interface.functions)
-      .filter(method => method !== 'supportsInterface(bytes4)')
+    return contract.interface.fragments
+      .filter((fragment: any) => fragment.type === 'function' && fragment.name !== 'supportsInterface')
+      .map((fragment: any) => fragment.name)
       .sort();
   }, [contract]);
 
@@ -360,11 +361,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 p-4">
-      {/* Move toast container to top-right */}
-      <div className="fixed top-4 right-4 z-50 pointer-events-none">
-        <div className="pointer-events-auto">
-          {/* Toasts will appear here */}
-        </div>
+      {/* Toast container moved to top-right */}
+      <div className="fixed top-4 right-4 z-50">
+        {/* Toasts will appear here */}
       </div>
 
       <div className="max-w-7xl mx-auto space-y-6">
