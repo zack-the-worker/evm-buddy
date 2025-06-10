@@ -1,6 +1,7 @@
+
 # EVM Buddy
 
-Your Smart Contract Interaction Companion - A powerful web application for interacting with smart contracts on EVM-compatible blockchains. This tool provides an intuitive interface for connecting to blockchain networks, loading smart contracts, and executing both read and write operations.
+Your Smart Contract Interaction Companion - A powerful web application for interacting with smart contracts on EVM-compatible blockchains. This tool provides an intuitive interface for connecting to blockchain networks, loading smart contracts, and executing both read and write operations with comprehensive activity logging.
 
 ![EVM Buddy](/lovable-uploads/a7912155-f4fc-486a-ac58-3afa5662a745.png)
 
@@ -36,11 +37,23 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 - **Quick Load**: One-click loading of saved presets
 - **Export/Import**: Easy sharing of configurations
 
+### 📊 Activity Logging
+- **Real-time Logs**: Comprehensive logging of all smart contract interactions
+- **Timestamp Tracking**: Each log entry includes precise timestamp (date, time)
+- **Scrollable Interface**: Handle large amounts of log data with smooth scrolling
+- **Clear Function**: Easy log clearing for fresh start
+- **Raw Data Display**: Full transaction and method call details
+
+### 🔔 Enhanced Notifications
+- **Top-right Positioning**: Non-intrusive notification placement
+- **Status Updates**: Real-time feedback for all operations
+- **Error Handling**: Clear error messages and troubleshooting guidance
+
 ### 🎨 User Experience
 - **Responsive Design**: Works perfectly on desktop and mobile devices
 - **Real-time Updates**: Live connection status and wallet information
-- **Error Handling**: Comprehensive error messages and troubleshooting
 - **Professional UI**: Modern, clean interface with smooth animations
+- **Built-in Help**: Interactive guide modal with usage instructions
 
 ## 🛠️ Getting Started
 
@@ -129,7 +142,18 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 5. Click "Call Method"
 6. Approve transaction in your wallet (if using Web3 wallet)
 
-### 5. Save and Load Presets
+### 5. Monitor Activity Logs
+
+**View Logs:**
+- All interactions are automatically logged in the Activity Logs section
+- Each entry includes timestamp and full transaction details
+- Scroll through the log area to view historical activities
+
+**Manage Logs:**
+- Click "Clear Logs" to remove all log entries
+- Logs are scrollable for easy navigation through large amounts of data
+
+### 6. Save and Load Presets
 
 **Save Configuration:**
 1. Set up your network, contract, and wallet
@@ -171,6 +195,12 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 - Special handling for timestamps, token amounts, and addresses
 - Structured display of complex objects and arrays
 
+### Comprehensive Logging
+- All interactions logged with precise timestamps
+- Raw transaction data and method call details
+- Scrollable interface for managing large log volumes
+- One-click log clearing functionality
+
 ### Error Handling
 - Comprehensive error messages
 - Transaction revert reasons
@@ -191,6 +221,7 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 - **Blockchain**: ethers.js v6
 - **Build Tool**: Vite
 - **Icons**: Lucide React
+- **UI Components**: Radix UI primitives
 
 ## 📝 Examples
 
@@ -222,10 +253,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🆘 Support
 
 If you encounter any issues:
-1. Check the console for error messages
+1. Check the Activity Logs for detailed error information
 2. Verify your network connection
 3. Ensure your wallet is properly connected
 4. Validate contract address and ABI format
+5. Use the built-in help guide for step-by-step instructions
 
 For additional help, please open an issue in the repository.
 
