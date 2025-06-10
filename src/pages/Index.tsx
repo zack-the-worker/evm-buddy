@@ -754,16 +754,31 @@ const Index = () => {
       console.log(`Full call data: ${callData}`);
       console.log(`Parameters:`, params);
 
-      // Prepare transaction object
-      const txRequest = {
+      // Prepare transaction object with proper formatting for MetaMask
+      const txRequest: any = {
         to: contract.address,
         data: callData,
-        value: ethValue !== '0' ? `0x${BigInt(ethers.parseEther(ethValue)).toString(16)}` : '0x0',
-        gas: `0x${parseInt(gasLimit).toString(16)}`,
-        gasPrice: gasPrice ? `0x${BigInt(ethers.parseUnits(gasPrice, 'gwei')).toString(16)}` : undefined
+        from: walletInfo.address
       };
 
-      console.log('Transaction request:', txRequest);
+      // Add ETH value if specified
+      if (ethValue !== '0') {
+        const valueInWei = ethers.parseEther(ethValue);
+        txRequest.value = `0x${valueInWei.toString(16)}`;
+      }
+
+      // Add gas limit if specified
+      if (gasLimit && gasLimit !== '0') {
+        txRequest.gas = `0x${parseInt(gasLimit).toString(16)}`;
+      }
+
+      // Add gas price if specified (convert from Gwei to wei)
+      if (gasPrice && gasPrice !== '0') {
+        const gasPriceWei = ethers.parseUnits(gasPrice, 'gwei');
+        txRequest.gasPrice = `0x${gasPriceWei.toString(16)}`;
+      }
+
+      console.log('Final transaction request:', txRequest);
 
       if (walletInfo.connectionType === 'web3-wallet') {
         // Use Web3 wallet (MetaMask, etc.)
@@ -771,12 +786,10 @@ const Index = () => {
           throw new Error('Web3 wallet not available');
         }
 
+        // Send transaction via MetaMask
         const txHash = await window.ethereum.request({
           method: 'eth_sendTransaction',
-          params: [{
-            from: walletInfo.address,
-            ...txRequest
-          }]
+          params: [txRequest]
         });
 
         console.log('Transaction sent via Web3 wallet:', txHash);
@@ -784,10 +797,6 @@ const Index = () => {
 
       } else if (walletInfo.connectionType === 'private-key') {
         // Use private key to sign and send transaction
-        const provider = new ethers.JsonRpcProvider(connection.rpcUrl);
-        
-        // Note: In a real application, private keys should be handled more securely
-        // This is a demonstration implementation
         throw new Error('Private key transaction signing not implemented in this demo. Please use Web3 wallet for write operations.');
       }
 
@@ -921,6 +930,18 @@ const Index = () => {
       console.log(`Method selector: ${callData.slice(0, 10)}`);
       console.log(`Full call data: ${callData}`);
 
+      // Prepare transaction for gas estimation
+      const txParams = {
+        to: contract.address,
+        data: callData,
+        from: walletInfo.address || undefined
+      };
+
+      // Add value if ETH is being sent
+      if (ethValue !== '0') {
+        txParams.value = `0x${BigInt(ethers.parseEther(ethValue)).toString(16)}`;
+      }
+
       // Estimate gas limit
       const gasLimitResponse = await fetch(connection.rpcUrl, {
         method: 'POST',
@@ -928,14 +949,7 @@ const Index = () => {
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'eth_estimateGas',
-          params: [
-            {
-              to: contract.address,
-              data: callData,
-              value: ethValue !== '0' ? `0x${BigInt(ethers.parseEther(ethValue)).toString(16)}` : undefined,
-              from: walletInfo.address || undefined
-            }
-          ],
+          params: [txParams],
           id: Date.now()
         })
       });
