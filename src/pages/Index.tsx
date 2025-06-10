@@ -930,8 +930,8 @@ const Index = () => {
       console.log(`Method selector: ${callData.slice(0, 10)}`);
       console.log(`Full call data: ${callData}`);
 
-      // Prepare transaction for gas estimation
-      const txParams = {
+      // Prepare transaction for gas estimation with proper typing
+      const txParams: any = {
         to: contract.address,
         data: callData,
         from: walletInfo.address || undefined
