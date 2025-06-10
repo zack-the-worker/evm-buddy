@@ -734,6 +734,71 @@ const Index = () => {
     return parseMethodResult(method, result);
   };
 
+  // Enhanced blockchain call function for WRITE methods with real transaction execution
+  const executeWriteMethodOnBlockchain = async (method: any, params: any[]): Promise<any> => {
+    if (!connection.isConnected) {
+      throw new Error('Not connected to RPC');
+    }
+
+    if (!walletInfo.isConnected || !walletInfo.address) {
+      throw new Error('Wallet not connected');
+    }
+
+    try {
+      const iface = new ethers.Interface([method]);
+      const callData = iface.encodeFunctionData(method.name, params);
+
+      console.log(`Executing WRITE method ${method.name} on blockchain:`);
+      console.log(`Contract: ${contract.address}`);
+      console.log(`Method selector: ${callData.slice(0, 10)}`);
+      console.log(`Full call data: ${callData}`);
+      console.log(`Parameters:`, params);
+
+      // Prepare transaction object
+      const txRequest = {
+        to: contract.address,
+        data: callData,
+        value: ethValue !== '0' ? `0x${BigInt(ethers.parseEther(ethValue)).toString(16)}` : '0x0',
+        gas: `0x${parseInt(gasLimit).toString(16)}`,
+        gasPrice: gasPrice ? `0x${BigInt(ethers.parseUnits(gasPrice, 'gwei')).toString(16)}` : undefined
+      };
+
+      console.log('Transaction request:', txRequest);
+
+      if (walletInfo.connectionType === 'web3-wallet') {
+        // Use Web3 wallet (MetaMask, etc.)
+        if (!window.ethereum) {
+          throw new Error('Web3 wallet not available');
+        }
+
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: walletInfo.address,
+            ...txRequest
+          }]
+        });
+
+        console.log('Transaction sent via Web3 wallet:', txHash);
+        return txHash;
+
+      } else if (walletInfo.connectionType === 'private-key') {
+        // Use private key to sign and send transaction
+        const provider = new ethers.JsonRpcProvider(connection.rpcUrl);
+        
+        // Note: In a real application, private keys should be handled more securely
+        // This is a demonstration implementation
+        throw new Error('Private key transaction signing not implemented in this demo. Please use Web3 wallet for write operations.');
+      }
+
+      throw new Error('No valid wallet connection method available');
+
+    } catch (error) {
+      console.error('Error executing write method on blockchain:', error);
+      throw error;
+    }
+  };
+
   const executeSelectedMethod = async () => {
     if (!selectedMethod || !connection.isConnected) {
       toast({
@@ -749,7 +814,7 @@ const Index = () => {
     if (!isReadMethod && !walletInfo.isConnected) {
       toast({
         title: "Error",
-        description: "Please enter wallet address for WRITE method",
+        description: "Please connect wallet for WRITE method",
         variant: "destructive"
       });
       return;
@@ -798,16 +863,8 @@ const Index = () => {
         // Use real RPC call for READ methods
         result = await executeRealBlockchainCall(methodSignature, params);
       } else {
-        // For WRITE methods, create proper transaction data
-        const iface = new ethers.Interface([methodSignature]);
-        const callData = iface.encodeFunctionData(selectedMethod.name, params);
-        
-        console.log(`WRITE method ${selectedMethod.name}:`);
-        console.log(`Method selector: ${callData.slice(0, 10)}`);
-        console.log(`Call data: ${callData}`);
-        
-        // Use simulation for WRITE methods (until private key is implemented)
-        result = await simulateBlockchainCall(methodSignature, params);
+        // Execute actual write transaction on blockchain
+        result = await executeWriteMethodOnBlockchain(methodSignature, params);
       }
       
       const formattedResult = formatMethodResult(selectedMethod, result);
@@ -820,12 +877,12 @@ const Index = () => {
         gasUsed: isReadMethod ? undefined : gasLimit,
         gasPrice: isReadMethod ? undefined : (gasPrice || '20'),
         timestamp: new Date().toISOString(),
-        isRealCall: isReadMethod // Flag to indicate if this was a real RPC call
+        isRealCall: true // Both read and write are now real calls
       });
 
       toast({
-        title: isReadMethod ? "Read successful" : "Transaction successful (Simulated)",
-        description: `${selectedMethod.name}: Success`,
+        title: isReadMethod ? "Read successful" : "Transaction sent",
+        description: `${selectedMethod.name}: ${isReadMethod ? 'Success' : 'Transaction submitted to blockchain'}`,
       });
 
     } catch (error) {
@@ -934,6 +991,15 @@ const Index = () => {
       return;
     }
 
+    if (!walletInfo.isConnected || !walletInfo.address) {
+      toast({
+        title: "Error",
+        description: "Please connect wallet for gas estimation",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsEstimatingGas(true);
     try {
       // Prepare method parameters
@@ -1033,9 +1099,9 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Smart Contract Communicator
+                  EVM Buddy
                 </h1>
-                <p className="text-sm text-gray-500">Interact with Smart Contracts on EVM</p>
+                <p className="text-sm text-gray-500">Your Smart Contract Interaction Companion</p>
               </div>
             </div>
             

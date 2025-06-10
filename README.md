@@ -1,9 +1,8 @@
+# EVM Buddy
 
-# Smart Contract Communicator
+Your Smart Contract Interaction Companion - A powerful web application for interacting with smart contracts on EVM-compatible blockchains. This tool provides an intuitive interface for connecting to blockchain networks, loading smart contracts, and executing both read and write operations.
 
-A powerful web application for interacting with smart contracts on EVM-compatible blockchains. This tool provides an intuitive interface for connecting to blockchain networks, loading smart contracts, and executing both read and write operations.
-
-![Smart Contract Communicator](/lovable-uploads/a7912155-f4fc-486a-ac58-3afa5662a745.png)
+![EVM Buddy](/lovable-uploads/a7912155-f4fc-486a-ac58-3afa5662a745.png)
 
 ## 🚀 Features
 
@@ -54,7 +53,7 @@ A powerful web application for interacting with smart contracts on EVM-compatibl
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd smart-contract-communicator
+   cd evm-buddy
    ```
 
 2. **Install dependencies**
@@ -232,4 +231,4 @@ For additional help, please open an issue in the repository.
 
 ---
 
-**Made with ❤️ for the Web3 community**
+**EVM Buddy - Made with ❤️ for the Web3 community**
