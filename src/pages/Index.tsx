@@ -27,7 +27,9 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  Edit
+  Edit,
+  Trash2,
+  ScrollText
 } from 'lucide-react';
 
 interface ConnectionState {
@@ -48,6 +50,15 @@ interface WalletInfo {
   balance: string;
   isConnected: boolean;
   connectionType: 'private-key' | 'web3-wallet' | null;
+}
+
+interface LogEntry {
+  id: string;
+  timestamp: string;
+  type: 'RPC' | 'CONTRACT' | 'WALLET' | 'ERROR';
+  action: string;
+  details: string;
+  rawData?: any;
 }
 
 const PRESET_NETWORKS = [
@@ -175,6 +186,35 @@ const Index = () => {
   const [ethValue, setEthValue] = useState('0');
   const [isEstimatingGas, setIsEstimatingGas] = useState(false);
 
+  // New state for logs
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  // Helper function to add log entry
+  const addLog = (type: LogEntry['type'], action: string, details: string, rawData?: any) => {
+    const newLog: LogEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }),
+      type,
+      action,
+      details,
+      rawData
+    };
+    setLogs(prev => [newLog, ...prev]);
+  };
+
+  // Helper function to clear logs
+  const clearLogs = () => {
+    setLogs([]);
+    addLog('WALLET', 'CLEAR_LOGS', 'All logs cleared by user');
+  };
+
   const getNetworkName = (chainId: number): string => {
     const networks: { [key: number]: string } = {
       1: 'Ethereum Mainnet',
@@ -201,6 +241,8 @@ const Index = () => {
       }
 
       try {
+        addLog('RPC', 'AUTO_CONNECT_ATTEMPT', `Attempting to connect to ${rpcUrl}`);
+
         const response = await fetch(rpcUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -225,6 +267,13 @@ const Index = () => {
           networkName
         });
 
+        addLog('RPC', 'AUTO_CONNECT_SUCCESS', `Connected to ${networkName} (Chain ID: ${chainId})`, {
+          rpcUrl,
+          chainId,
+          networkName,
+          response: data
+        });
+
       } catch (error) {
         setConnection({
           rpcUrl: '',
@@ -232,6 +281,7 @@ const Index = () => {
           isConnected: false,
           networkName: ''
         });
+        addLog('ERROR', 'AUTO_CONNECT_FAILED', `Failed to connect to RPC: ${error}`, { rpcUrl, error });
       }
     };
 
@@ -258,12 +308,18 @@ const Index = () => {
           abi,
           isLoaded: true
         });
+        addLog('CONTRACT', 'AUTO_LOAD_SUCCESS', `Contract loaded at ${contractAddress}`, {
+          address: contractAddress,
+          abi,
+          methodCount: abi.filter((item: any) => item.type === 'function').length
+        });
       } catch (error) {
         setContract({
           address: '',
           abi: [],
           isLoaded: false
         });
+        addLog('ERROR', 'AUTO_LOAD_FAILED', `Failed to load contract: ${error}`, { contractAddress, abiInput, error });
       }
     };
 
@@ -282,6 +338,8 @@ const Index = () => {
     }
 
     setIsConnecting(true);
+    addLog('RPC', 'MANUAL_CONNECT_ATTEMPT', `Manual connection attempt to ${rpcUrl}`);
+    
     try {
       const response = await fetch(rpcUrl, {
         method: 'POST',
@@ -308,12 +366,18 @@ const Index = () => {
       };
 
       setConnection(newConnection);
+      addLog('RPC', 'MANUAL_CONNECT_SUCCESS', `Successfully connected to ${networkName}`, {
+        ...newConnection,
+        response: data
+      });
+      
       toast({
         title: "Connected",
         description: `Connected to ${networkName} (Chain ID: ${chainId})`,
       });
 
     } catch (error) {
+      addLog('ERROR', 'MANUAL_CONNECT_FAILED', `Manual connection failed: ${error}`, { rpcUrl, error });
       toast({
         title: "Connection failed",
         description: "Cannot connect to RPC URL",
@@ -325,6 +389,7 @@ const Index = () => {
   };
 
   const disconnect = () => {
+    addLog('RPC', 'DISCONNECT', `Disconnected from ${connection.networkName || 'unknown network'}`);
     setConnection({
       rpcUrl: '',
       chainId: null,
@@ -339,16 +404,19 @@ const Index = () => {
   };
 
   const selectPresetNetwork = (network: any) => {
+    addLog('RPC', 'PRESET_SELECTED', `Selected preset network: ${network.name}`, network);
     setRpcUrl(network.rpcUrl);
   };
 
   const handleWalletAddressSubmit = () => {
     if (walletInfo.address && /^0x[a-fA-F0-9]{40}$/.test(walletInfo.address)) {
+      addLog('WALLET', 'ADDRESS_UPDATED', `Wallet address updated to ${walletInfo.address}`);
       toast({
         title: "Wallet address updated",
         description: walletInfo.address
       });
     } else {
+      addLog('ERROR', 'INVALID_ADDRESS', `Invalid wallet address: ${walletInfo.address}`);
       toast({
         title: "Error",
         description: "Invalid wallet address",
@@ -360,12 +428,15 @@ const Index = () => {
   const loadABIFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      addLog('CONTRACT', 'ABI_FILE_UPLOAD', `Loading ABI from file: ${file.name}`);
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const abi = JSON.parse(e.target?.result as string);
           setAbiInput(JSON.stringify(abi, null, 2));
+          addLog('CONTRACT', 'ABI_FILE_SUCCESS', `ABI loaded from file successfully`, { filename: file.name, abi });
         } catch (error) {
+          addLog('ERROR', 'ABI_FILE_FAILED', `Failed to parse ABI file: ${error}`, { filename: file.name, error });
           toast({
             title: "Error",
             description: "Invalid ABI file",
@@ -388,15 +459,19 @@ const Index = () => {
     }
 
     setIsLoadingAbi(true);
+    addLog('CONTRACT', 'ABI_EXPLORER_ATTEMPT', `Attempting to load ABI from explorer for ${contractAddress}`);
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setAbiInput(JSON.stringify(sampleABI, null, 2));
       
+      addLog('CONTRACT', 'ABI_EXPLORER_SUCCESS', 'ABI loaded from explorer (demo)', { contractAddress, abi: sampleABI });
       toast({
         title: "Success",
         description: "ABI loaded from explorer (demo)",
       });
     } catch (error) {
+      addLog('ERROR', 'ABI_EXPLORER_FAILED', `Failed to load ABI from explorer: ${error}`, { contractAddress, error });
       toast({
         title: "Error",
         description: "Cannot load ABI from explorer",
@@ -425,11 +500,13 @@ const Index = () => {
         isLoaded: true
       };
       setContract(newContract);
+      addLog('CONTRACT', 'MANUAL_LOAD_SUCCESS', `Contract manually loaded at ${contractAddress}`, newContract);
       toast({
         title: "Smart Contract loaded",
         description: `Address: ${contractAddress}`,
       });
     } catch (error) {
+      addLog('ERROR', 'MANUAL_LOAD_FAILED', `Failed to manually load contract: ${error}`, { contractAddress, abiInput, error });
       toast({
         title: "Error",
         description: "Invalid ABI",
@@ -455,6 +532,12 @@ const Index = () => {
         newParams[`param_${index}`] = '';
       });
       setMethodParameters(newParams);
+      
+      addLog('CONTRACT', 'METHOD_SELECTED', `Selected method: ${methodName}`, {
+        method,
+        inputs: method.inputs || [],
+        stateMutability: method.stateMutability
+      });
     }
   };
 
@@ -588,12 +671,12 @@ const Index = () => {
       // Encode the function call with parameters
       const callData = iface.encodeFunctionData(method.name, params);
 
-      console.log(`Real RPC call to ${method.name}:`);
-      console.log(`Contract: ${contract.address}`);
-      console.log(`Method signature: ${method.name}(${method.inputs?.map((input: any) => input.type).join(',') || ''})`);
-      console.log(`Function selector: ${callData.slice(0, 10)}`);
-      console.log(`Full call data: ${callData}`);
-      console.log(`Parameters:`, params);
+      addLog('CONTRACT', 'READ_CALL_START', `Executing READ method: ${method.name}`, {
+        method: method.name,
+        params,
+        callData,
+        contract: contract.address
+      });
 
       // Make actual RPC call
       const response = await fetch(connection.rpcUrl, {
@@ -627,6 +710,11 @@ const Index = () => {
       const result = data.result;
       
       if (!result || result === '0x') {
+        addLog('CONTRACT', 'READ_CALL_SUCCESS', `READ method ${method.name} returned null`, {
+          method: method.name,
+          params,
+          result: null
+        });
         return null;
       }
 
@@ -634,30 +722,50 @@ const Index = () => {
       const decodedResult = iface.decodeFunctionResult(method.name, result);
       
       // Return the decoded result (can be array for tuple types)
-      return decodedResult.length === 1 ? decodedResult[0] : decodedResult;
+      const finalResult = decodedResult.length === 1 ? decodedResult[0] : decodedResult;
+      
+      addLog('CONTRACT', 'READ_CALL_SUCCESS', `READ method ${method.name} executed successfully`, {
+        method: method.name,
+        params,
+        rawResult: result,
+        decodedResult: finalResult
+      });
+
+      return finalResult;
 
     } catch (error) {
-      console.error('Error in executeRealBlockchainCall:', error);
+      addLog('ERROR', 'READ_CALL_FAILED', `READ method ${method.name} failed: ${error}`, {
+        method: method.name,
+        params,
+        error
+      });
       throw error;
     }
   };
 
   const simulateBlockchainCall = async (method: any, params: any[]): Promise<any> => {
-    console.log(`Calling ${method.name} with params:`, params);
+    addLog('CONTRACT', 'SIMULATE_CALL_START', `Simulating method: ${method.name}`, {
+      method: method.name,
+      params
+    });
     
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
     
     // Simulate real blockchain responses based on method type
+    let result;
     switch (method.name) {
       case 'name':
-        return 'MyToken';
+        result = 'MyToken';
+        break;
       
       case 'symbol':
-        return 'MTK';
+        result = 'MTK';
+        break;
       
       case 'totalSupply':
-        return '1000000000000000000000000'; // 1M tokens with 18 decimals
+        result = '1000000000000000000000000'; // 1M tokens with 18 decimals
+        break;
       
       case 'balanceOf':
         const address = params[0];
@@ -666,7 +774,8 @@ const Index = () => {
         }
         // Simulate different balances for different addresses
         const lastDigit = parseInt(address.slice(-1), 16);
-        return (BigInt(lastDigit) * BigInt('1000000000000000000')).toString(); // lastDigit ETH
+        result = (BigInt(lastDigit) * BigInt('1000000000000000000')).toString(); // lastDigit ETH
+        break;
       
       case 'allowance':
         const owner = params[0];
@@ -674,7 +783,8 @@ const Index = () => {
         if (!owner?.match(/^0x[a-fA-F0-9]{40}$/) || !spender?.match(/^0x[a-fA-F0-9]{40}$/)) {
           throw new Error('Invalid address format');
         }
-        return '500000000000000000000'; // 500 tokens allowed
+        result = '500000000000000000000'; // 500 tokens allowed
+        break;
       
       case 'transfer':
         const to = params[0];
@@ -686,7 +796,8 @@ const Index = () => {
           throw new Error('Invalid transfer amount');
         }
         // Return transaction hash for write operations
-        return '0x' + Math.random().toString(16).substr(2, 64);
+        result = '0x' + Math.random().toString(16).substr(2, 64);
+        break;
       
       default:
         // For unknown methods, return realistic mock data based on method type
@@ -694,7 +805,7 @@ const Index = () => {
         
         if (isWriteMethod) {
           // Return transaction hash for write operations
-          return '0x' + Math.random().toString(16).substr(2, 64);
+          result = '0x' + Math.random().toString(16).substr(2, 64);
         } else {
           // For read methods, return data based on expected output type
           const outputType = method.outputs?.[0]?.type;
@@ -702,25 +813,40 @@ const Index = () => {
           switch (outputType) {
             case 'uint256':
             case 'uint':
-              return Math.floor(Math.random() * 1000000).toString();
+              result = Math.floor(Math.random() * 1000000).toString();
+              break;
             
             case 'string':
-              return `Sample string result for ${method.name}`;
+              result = `Sample string result for ${method.name}`;
+              break;
             
             case 'bool':
-              return Math.random() > 0.5;
+              result = Math.random() > 0.5;
+              break;
             
             case 'address':
-              return '0x' + Math.random().toString(16).substr(2, 40);
+              result = '0x' + Math.random().toString(16).substr(2, 40);
+              break;
             
             case 'bytes32':
-              return '0x' + Math.random().toString(16).substr(2, 64);
+              result = '0x' + Math.random().toString(16).substr(2, 64);
+              break;
             
             default:
-              return Math.floor(Math.random() * 1000).toString();
+              result = Math.floor(Math.random() * 1000).toString();
+              break;
           }
         }
+        break;
     }
+    
+    addLog('CONTRACT', 'SIMULATE_CALL_SUCCESS', `Simulation completed for ${method.name}`, {
+      method: method.name,
+      params,
+      result
+    });
+    
+    return result;
   };
 
   const formatMethodResult = (method: any, result: any): string => {
@@ -748,11 +874,16 @@ const Index = () => {
       const iface = new ethers.Interface([method]);
       const callData = iface.encodeFunctionData(method.name, params);
 
-      console.log(`Executing WRITE method ${method.name} on blockchain:`);
-      console.log(`Contract: ${contract.address}`);
-      console.log(`Method selector: ${callData.slice(0, 10)}`);
-      console.log(`Full call data: ${callData}`);
-      console.log(`Parameters:`, params);
+      addLog('CONTRACT', 'WRITE_CALL_START', `Executing WRITE method: ${method.name}`, {
+        method: method.name,
+        params,
+        callData,
+        contract: contract.address,
+        wallet: walletInfo.address,
+        ethValue,
+        gasLimit,
+        gasPrice
+      });
 
       // Prepare transaction object with proper formatting for MetaMask
       const txRequest: any = {
@@ -778,8 +909,6 @@ const Index = () => {
         txRequest.gasPrice = `0x${gasPriceWei.toString(16)}`;
       }
 
-      console.log('Final transaction request:', txRequest);
-
       if (walletInfo.connectionType === 'web3-wallet') {
         // Use Web3 wallet (MetaMask, etc.)
         if (!window.ethereum) {
@@ -792,7 +921,13 @@ const Index = () => {
           params: [txRequest]
         });
 
-        console.log('Transaction sent via Web3 wallet:', txHash);
+        addLog('CONTRACT', 'WRITE_CALL_SUCCESS', `WRITE method ${method.name} transaction sent`, {
+          method: method.name,
+          params,
+          txHash,
+          txRequest
+        });
+
         return txHash;
 
       } else if (walletInfo.connectionType === 'private-key') {
@@ -803,7 +938,11 @@ const Index = () => {
       throw new Error('No valid wallet connection method available');
 
     } catch (error) {
-      console.error('Error executing write method on blockchain:', error);
+      addLog('ERROR', 'WRITE_CALL_FAILED', `WRITE method ${method.name} failed: ${error}`, {
+        method: method.name,
+        params,
+        error
+      });
       throw error;
     }
   };
@@ -856,8 +995,6 @@ const Index = () => {
         return paramValue;
       });
 
-      console.log(`Executing ${selectedMethod.name} with parameters:`, params);
-
       // Create the proper method signature for encoding
       const methodSignature = {
         name: selectedMethod.name,
@@ -889,26 +1026,40 @@ const Index = () => {
         isRealCall: true // Both read and write are now real calls
       });
 
+      addLog('CONTRACT', isReadMethod ? 'METHOD_EXECUTION_SUCCESS' : 'TRANSACTION_SUCCESS', 
+        `${selectedMethod.name} ${isReadMethod ? 'read' : 'write'} completed successfully`, {
+        method: selectedMethod.name,
+        params,
+        result: formattedResult,
+        rawResult: result,
+        type: isReadMethod ? 'read' : 'write'
+      });
+
       toast({
         title: isReadMethod ? "Read successful" : "Transaction sent",
         description: `${selectedMethod.name}: ${isReadMethod ? 'Success' : 'Transaction submitted to blockchain'}`,
       });
 
     } catch (error) {
-      console.error('Method execution error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       setMethodResult({
         method: selectedMethod.name,
-        result: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        result: `Error: ${errorMessage}`,
         rawResult: null,
         type: isReadMethod ? 'read' : 'write',
         error: true,
         timestamp: new Date().toISOString()
       });
 
+      addLog('ERROR', 'METHOD_EXECUTION_FAILED', `${selectedMethod.name} execution failed: ${errorMessage}`, {
+        method: selectedMethod.name,
+        error: errorMessage
+      });
+
       toast({
         title: isReadMethod ? "Error reading data" : "Transaction failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -926,9 +1077,11 @@ const Index = () => {
       const iface = new ethers.Interface([method]);
       const callData = iface.encodeFunctionData(method.name, params);
 
-      console.log(`Estimating gas for ${method.name}:`, params);
-      console.log(`Method selector: ${callData.slice(0, 10)}`);
-      console.log(`Full call data: ${callData}`);
+      addLog('CONTRACT', 'GAS_ESTIMATION_START', `Estimating gas for ${method.name}`, {
+        method: method.name,
+        params,
+        callData
+      });
 
       // Prepare transaction for gas estimation with proper typing
       const txParams: any = {
@@ -984,13 +1137,29 @@ const Index = () => {
       const gasLimitWithBuffer = Math.floor(estimatedGasLimit * 1.2);
       const gasPriceInGwei = Math.floor(currentGasPrice / 1000000000);
 
-      return {
+      const result = {
         gasLimit: gasLimitWithBuffer.toString(),
         gasPrice: gasPriceInGwei.toString()
       };
 
+      addLog('CONTRACT', 'GAS_ESTIMATION_SUCCESS', `Gas estimated for ${method.name}`, {
+        method: method.name,
+        params,
+        estimatedGasLimit,
+        gasLimitWithBuffer,
+        currentGasPrice,
+        gasPriceInGwei,
+        result
+      });
+
+      return result;
+
     } catch (error) {
-      console.error('Error estimating gas:', error);
+      addLog('ERROR', 'GAS_ESTIMATION_FAILED', `Gas estimation failed for ${method.name}: ${error}`, {
+        method: method.name,
+        params,
+        error
+      });
       throw error;
     }
   };
@@ -1060,10 +1229,10 @@ const Index = () => {
       });
 
     } catch (error) {
-      console.error('Gas estimation error:', error);
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
       toast({
         title: "Error estimating gas",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -1073,6 +1242,7 @@ const Index = () => {
 
   // Preset handling functions
   const handleLoadPreset = (preset: any) => {
+    addLog('WALLET', 'PRESET_LOADED', `Loaded preset configuration`, preset);
     setRpcUrl(preset.rpcUrl);
     setContractAddress(preset.contractAddress);
     setAbiInput(preset.abi);
@@ -1169,7 +1339,7 @@ const Index = () => {
                   <Label htmlFor="preset-network">Preset Networks</Label>
                   <Select onValueChange={(value) => {
                     const network = PRESET_NETWORKS.find(n => n.name === value);
-                    if (network) setRpcUrl(network.rpcUrl);
+                    if (network) selectPresetNetwork(network);
                   }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select preset network" />
@@ -1219,6 +1389,40 @@ const Index = () => {
               onWalletChange={setWalletInfo}
               rpcUrl={rpcUrl}
             />
+
+            {/* Activity Logs */}
+            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <ScrollText className="w-5 h-5 text-green-600" />
+                    <span>Activity Logs</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={clearLogs}
+                    disabled={logs.length === 0}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={logs.map(log => 
+                    `[${log.timestamp}] ${log.type}: ${log.action}\n${log.details}\n${log.rawData ? `Raw: ${JSON.stringify(log.rawData, null, 2)}\n` : ''}\n---\n`
+                  ).join('')}
+                  readOnly
+                  placeholder="Activity logs will appear here..."
+                  className="h-64 font-mono text-xs resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  {logs.length} entries • Auto-scrolls to show latest activity
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column - Smart Contract */}
