@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
-import { Loader2, Github } from "lucide-react";
+import { Loader2, Github, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import HelpModal from '@/components/HelpModal';
 import MethodExecutionButton from '@/components/MethodExecutionButton';
@@ -152,7 +152,7 @@ const Index = () => {
       const wallet = connection.privateKey ? new ethers.Wallet(connection.privateKey, provider) : ethers.Wallet.createRandom();
       const contract = new ethers.Contract(contractInfo.address, contractInfo.abi, wallet);
 
-      const methodArgs = selectedMethod.inputs?.map((input, index) => {
+      const methodArgs = selectedMethod.inputs?.map((input: any, index: number) => {
         const value = methodInputs[index] || '';
         return parseMethodInput(value, input.type);
       }) || [];
@@ -185,7 +185,7 @@ const Index = () => {
       const provider = new ethers.JsonRpcProvider(connection.rpcUrl);
       const contract = new ethers.Contract(contractInfo.address, contractInfo.abi, provider);
 
-      const methodArgs = selectedMethod.inputs?.map((input, index) => {
+      const methodArgs = selectedMethod.inputs?.map((input: any, index: number) => {
         const value = methodInputs[index] || '';
         return parseMethodInput(value, input.type);
       }) || [];
@@ -218,7 +218,7 @@ const Index = () => {
       const wallet = new ethers.Wallet(connection.privateKey!, provider);
       const contract = new ethers.Contract(contractInfo.address, contractInfo.abi, wallet);
 
-      const methodArgs = selectedMethod.inputs?.map((input, index) => {
+      const methodArgs = selectedMethod.inputs?.map((input: any, index: number) => {
         const value = methodInputs[index] || '';
         return parseMethodInput(value, input.type);
       }) || [];
@@ -236,7 +236,7 @@ const Index = () => {
 
       toast({
         title: "Transaction Confirmed",
-        description: `Transaction confirmed!`,
+        description: "Transaction confirmed!",
       })
     } catch (error: any) {
       console.error("Failed to execute method:", error);
@@ -263,7 +263,7 @@ const Index = () => {
         const contract = new ethers.Contract(contractInfo.address, contractInfo.abi, wallet);
 
         // Prepare method arguments
-        const methodArgs = selectedMethod.inputs?.map((input, index) => {
+        const methodArgs = selectedMethod.inputs?.map((input: any, index: number) => {
           const value = methodInputs[index] || '';
           return parseMethodInput(value, input.type);
         }) || [];
@@ -358,7 +358,7 @@ const Index = () => {
                 <Textarea
                   id="contractAbi"
                   className="mt-1 p-2 w-full border rounded-md text-gray-800 dark:text-white bg-white dark:bg-gray-800"
-                  placeholder="[{\"inputs\":...}]"
+                  placeholder="[{&quot;inputs&quot;:...}]"
                   value={contractInfo.abi}
                   onChange={handleContractAbiChange}
                 />
