@@ -124,7 +124,7 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 **READ Methods (View/Pure):**
 1. Select READ method from dropdown
 2. Enter required parameters
-3. Click "Call Method"
+3. Click "Execute"
 4. Results display immediately
 
 **WRITE Methods (State-changing):**
@@ -132,7 +132,7 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 2. Enter required parameters
 3. Set ETH value (if payable)
 4. Adjust gas settings or click "Estimate Gas"
-5. Click "Call Method"
+5. Click "Execute"
 6. Approve transaction in wallet (if using Web3 wallet)
 
 ### 5. Save and Load Configurations
@@ -243,6 +243,17 @@ If you encounter issues:
 5. Check Activity Logs for debugging
 
 For additional support, please open an issue in the repository.
+
+## 👨‍💻 Contributing
+
+We welcome contributions from the community! If you'd like to improve EVM Buddy, please feel free to:
+
+- Report bugs and suggest features through issues
+- Submit pull requests with bug fixes or new features
+- Improve documentation
+- Share the project with others
+
+Before submitting a PR, please make sure your changes are well-tested and maintain the existing code style. We're excited to see how you can help make EVM Buddy even better!
 
 ---
 

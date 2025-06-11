@@ -29,7 +29,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  ScrollText
+  ScrollText,
+  Github
 } from 'lucide-react';
 import HelpModal from '@/components/HelpModal';
 
@@ -1640,6 +1641,7 @@ const Index = () => {
                             isExecuting={isExecuting}
                             isEstimatingGas={isEstimatingGas}
                             disabled={!selectedMethod || !connection.isConnected}
+                            isWriteMethod={true}
                           />
                         ) : (
                           <Button 
@@ -1655,7 +1657,7 @@ const Index = () => {
                             ) : (
                               <>
                                 <Send className="w-4 h-4 mr-2" />
-                                Call Method
+                                Execute
                               </>
                             )}
                           </Button>
@@ -1718,6 +1720,24 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer with GitHub link */}
+      <footer className="py-4 px-8 border-t mt-8 bg-white/80">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <a 
+            href="https://github.com/zack-the-worker/evm-buddy" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <Github className="w-5 h-5" />
+            <span className="text-sm">GitHub Repository</span>
+          </a>
+          <div className="text-sm text-gray-500">
+            EVM Buddy - Your Smart Contract Interaction Companion
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

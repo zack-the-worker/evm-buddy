@@ -10,6 +10,7 @@ interface MethodExecutionButtonProps {
   isExecuting: boolean;
   isEstimatingGas: boolean;
   disabled: boolean;
+  isWriteMethod?: boolean;
 }
 
 const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
@@ -17,7 +18,8 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
   onEstimateGas,
   isExecuting,
   isEstimatingGas,
-  disabled
+  disabled,
+  isWriteMethod = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -27,7 +29,7 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
       <Button 
         onClick={onExecute}
         disabled={disabled || isExecuting || isEstimatingGas}
-        className="flex-1 rounded-r-none border-r-0 h-10"
+        className={`flex-1 rounded-r-none border-r-0 h-10 ${isWriteMethod ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
       >
         {isExecuting ? (
           <>
@@ -37,7 +39,7 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
         ) : (
           <>
             <Send className="w-4 h-4 mr-2" />
-            Call Method
+            Execute
           </>
         )}
       </Button>
@@ -47,7 +49,7 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
         <DropdownMenuTrigger asChild>
           <Button 
             variant="default" 
-            className="px-3 rounded-l-none h-10 min-w-[40px] flex items-center justify-center"
+            className={`px-3 rounded-l-none h-10 min-w-[40px] flex items-center justify-center ${isWriteMethod ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
             disabled={disabled || isExecuting || isEstimatingGas}
           >
             <ChevronDown className="w-4 h-4" />
@@ -62,7 +64,7 @@ const MethodExecutionButton: React.FC<MethodExecutionButtonProps> = ({
             disabled={isExecuting || isEstimatingGas}
           >
             <Send className="w-4 h-4 mr-2" />
-            Call Method
+            Execute
           </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={() => {
