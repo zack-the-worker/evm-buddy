@@ -1,190 +1,204 @@
+
 # EVM Buddy
 
-Your Smart Contract Interaction Companion - A powerful web application for interacting with smart contracts on EVM-compatible blockchains. This tool provides an intuitive interface for connecting to blockchain networks, loading smart contracts, and executing both read and write operations.
+Your Smart Contract Interaction Companion - Ứng dụng web mạnh mẽ để tương tác với smart contracts trên các blockchain tương thích EVM. Công cụ này cung cấp giao diện trực quan để kết nối với mạng blockchain, tải smart contracts và thực hiện cả các thao tác đọc và ghi.
 
 ![EVM Buddy](/lovable-uploads/a7912155-f4fc-486a-ac58-3afa5662a745.png)
 
-## 🚀 Features
+## 🚀 Tính năng chính
 
-### 🌐 Multi-Network Support
-- **Preset Networks**: Quick connection to popular networks (Ethereum, BSC, Polygon, Testnets)
-- **Custom RPC**: Connect to any EVM-compatible network using custom RPC URLs
-- **Auto-Detection**: Automatic network detection and chain ID verification
+### 🌐 Hỗ trợ đa mạng
+- **Mạng có sẵn**: Kết nối nhanh với các mạng phổ biến (Ethereum, BSC, Polygon, Testnets)
+- **RPC tùy chỉnh**: Kết nối với bất kỳ mạng EVM nào bằng URL RPC tùy chỉnh
+- **Tự động phát hiện**: Tự động phát hiện mạng và xác minh chain ID
+- **Tự động kết nối**: Tự động kết nối khi nhập URL RPC
 
-### 💳 Flexible Wallet Integration
-- **Private Key Input**: Secure private key entry with show/hide functionality
-- **Web3 Wallet Connection**: Support for MetaMask, OKX, and other popular wallets
-- **Real-time Balance**: Automatic balance updates and wallet information display
+### 💳 Tích hợp ví linh hoạt
+- **Nhập Private Key**: Nhập private key an toàn với tính năng ẩn/hiện
+- **Kết nối ví Web3**: Hỗ trợ MetaMask, OKX và các ví phổ biến khác
+- **Cập nhật số dư**: Tự động cập nhật số dư và thông tin ví theo thời gian thực
 
-### 📋 Smart Contract Management
-- **ABI Loading**: Multiple ways to load contract ABIs:
-  - Manual JSON input
-  - File upload (.json)
-  - Explorer integration (demo)
-- **Auto-Loading**: Automatic contract loading when address and ABI are provided
-- **Method Discovery**: Automatic categorization of READ and WRITE methods
+### 📋 Quản lý Smart Contract
+- **Tải ABI**: Nhiều cách tải ABI contract:
+  - Nhập JSON thủ công
+  - Tải file (.json)
+  - Tích hợp explorer (demo)
+- **Tự động tải**: Tự động tải contract khi có địa chỉ và ABI
+- **Khám phá phương thức**: Tự động phân loại các phương thức READ và WRITE
 
-### ⚡ Method Execution
-- **READ Methods**: Direct blockchain calls with real-time results
-- **WRITE Methods**: Transaction simulation with gas estimation
-- **Parameter Validation**: Smart parameter validation based on Solidity types
-- **Gas Estimation**: Accurate gas limit and price estimation
-- **Result Formatting**: Beautiful formatting of complex return values including structs and arrays
+### ⚡ Thực thi phương thức
+- **Phương thức READ**: Gọi trực tiếp blockchain với kết quả thời gian thực
+- **Phương thức WRITE**: Mô phỏng giao dịch với ước tính gas
+- **Xác thực tham số**: Xác thực thông minh dựa trên kiểu dữ liệu Solidity
+- **Ước tính Gas**: Ước tính chính xác gas limit và giá gas
+- **Định dạng kết quả**: Định dạng đẹp cho các giá trị trả về phức tạp bao gồm structs và arrays
 
-### 💾 Preset Management
-- **Save Configurations**: Save frequently used network and contract configurations
-- **Quick Load**: One-click loading of saved presets
-- **Export/Import**: Easy sharing of configurations
+### 💾 Quản lý cấu hình
+- **Lưu cấu hình**: Lưu các cấu hình mạng và contract thường dùng
+- **Tải nhanh**: Tải cấu hình đã lưu chỉ với một cú nhấp chuột
+- **Xuất/Nhập**: Dễ dàng chia sẻ cấu hình
 
-### 🎨 User Experience
-- **Responsive Design**: Works perfectly on desktop and mobile devices
-- **Real-time Updates**: Live connection status and wallet information
-- **Error Handling**: Comprehensive error messages and troubleshooting
-- **Professional UI**: Modern, clean interface with smooth animations
+### 📊 Theo dõi hoạt động
+- **Activity Logs**: Ghi lại tất cả các hoạt động tương tác với blockchain
+- **Thời gian chi tiết**: Mỗi log có timestamp chính xác (ngày/tháng/năm giờ:phút:giây)
+- **Raw Data**: Hiển thị dữ liệu thô để debug
+- **Có thể xóa**: Người dùng có thể xóa toàn bộ logs
+- **Cuộn được**: Giao diện cuộn để xem nhiều logs
 
-## 🛠️ Getting Started
+### 🎨 Trải nghiệm người dùng
+- **Thiết kế responsive**: Hoạt động hoàn hảo trên desktop và mobile
+- **Cập nhật thời gian thực**: Trạng thái kết nối và thông tin ví trực tiếp
+- **Xử lý lỗi**: Thông báo lỗi và hướng dẫn khắc phục toàn diện
+- **Giao diện chuyên nghiệp**: Giao diện hiện đại, sạch sẽ với hiệu ứng mượt mà
+- **Thông báo**: Hiển thị ở góc trên bên phải
 
-### Prerequisites
-- Node.js 16+ or Bun
-- Modern web browser with MetaMask or other Web3 wallet (optional)
+## 🛠️ Bắt đầu sử dụng
 
-### Installation
+### Yêu cầu hệ thống
+- Node.js 16+ hoặc Bun
+- Trình duyệt hiện đại có MetaMask hoặc ví Web3 khác (tùy chọn)
 
-1. **Clone the repository**
+### Cài đặt
+
+1. **Clone repository**
    ```bash
    git clone <repository-url>
    cd evm-buddy
    ```
 
-2. **Install dependencies**
+2. **Cài đặt dependencies**
    ```bash
    npm install
-   # or
+   # hoặc
    bun install
    ```
 
-3. **Start the development server**
+3. **Khởi động development server**
    ```bash
    npm run dev
-   # or
+   # hoặc
    bun dev
    ```
 
-4. **Open your browser**
-   Navigate to `http://localhost:5173`
+4. **Mở trình duyệt**
+   Điều hướng đến `http://localhost:5173`
 
-## 📖 How to Use
+## 📖 Hướng dẫn sử dụng
 
-### 1. Connect to a Blockchain Network
+### 1. Kết nối với mạng Blockchain
 
-**Option A: Use Preset Networks**
-1. Select a preset network from the dropdown (Ethereum, BSC, Polygon, etc.)
-2. The application will automatically connect
+**Tùy chọn A: Sử dụng mạng có sẵn**
+1. Chọn mạng có sẵn từ dropdown (Ethereum, BSC, Polygon, v.v.)
+2. Ứng dụng sẽ tự động kết nối
 
-**Option B: Custom RPC**
-1. Enter your custom RPC URL in the "RPC URL" field
-2. The application will auto-connect and detect the network
+**Tùy chọn B: RPC tùy chỉnh (Tự động kết nối)**
+1. Nhập URL RPC tùy chỉnh vào trường "RPC URL"
+2. Ứng dụng sẽ tự động kết nối và phát hiện mạng
 
-### 2. Connect Your Wallet
+### 2. Kết nối ví của bạn
 
-**Option A: Private Key**
-1. Enter your private key in the "Private Key" field
-2. Use the eye icon to show/hide the key
-3. Your wallet address and balance will appear automatically
+**Tùy chọn A: Private Key**
+1. Nhập private key vào trường "Private Key"
+2. Sử dụng biểu tượng mắt để hiện/ẩn key
+3. Địa chỉ ví và số dư sẽ hiển thị tự động
 
-**Option B: Web3 Wallet**
-1. Click "Connect Wallet"
-2. Choose your preferred wallet (MetaMask, OKX, etc.)
-3. Approve the connection in your wallet
+**Tùy chọn B: Ví Web3**
+1. Nhấp "Connect Wallet"
+2. Chọn ví ưa thích (MetaMask, OKX, v.v.)
+3. Phê duyệt kết nối trong ví của bạn
 
-### 3. Load a Smart Contract
+### 3. Tải Smart Contract
 
-**Auto-Loading Method (Recommended):**
-1. Enter the contract address
-2. Paste the ABI JSON or load from file
-3. The contract will load automatically
+**Phương pháp Tự động tải (Khuyến nghị):**
+1. Nhập địa chỉ contract
+2. Dán ABI JSON hoặc tải từ file
+3. Contract sẽ tự động tải
 
-**Manual Loading:**
-1. Enter contract address and ABI
-2. Click "Load Smart Contract"
+**Tùy chọn tải ABI:**
+- **Thủ công**: Copy và paste ABI JSON
+- **Tải file**: Nhấp "Load from file" và chọn file .json
+- **Explorer**: Nhấp "Load from Explorer" (demo với ABI mẫu)
 
-**ABI Loading Options:**
-- **Manual**: Copy and paste ABI JSON
-- **File Upload**: Click "Load from file" and select a .json file
-- **Explorer**: Click "Load from Explorer" (demo with sample ABI)
+### 4. Thực thi phương thức Contract
 
-### 4. Execute Contract Methods
+**Phương thức READ (View/Pure):**
+1. Chọn phương thức READ từ dropdown
+2. Nhập các tham số cần thiết
+3. Nhấp "Call Method"
+4. Kết quả hiển thị ngay lập tức
 
-**READ Methods (View/Pure):**
-1. Select a READ method from the dropdown
-2. Enter required parameters
-3. Click "Call Method"
-4. Results appear instantly
+**Phương thức WRITE (Thay đổi state):**
+1. Chọn phương thức WRITE từ dropdown
+2. Nhập các tham số cần thiết
+3. Đặt giá trị ETH (nếu payable)
+4. Điều chỉnh cài đặt gas hoặc nhấp "Estimate Gas"
+5. Nhấp "Call Method"
+6. Phê duyệt giao dịch trong ví (nếu dùng ví Web3)
 
-**WRITE Methods (State-Changing):**
-1. Select a WRITE method from the dropdown
-2. Enter required parameters
-3. Set ETH value (if payable)
-4. Adjust gas settings or click "Estimate Gas"
-5. Click "Call Method"
-6. Approve transaction in your wallet (if using Web3 wallet)
+### 5. Lưu và tải cấu hình
 
-### 5. Save and Load Presets
+**Lưu cấu hình:**
+1. Thiết lập mạng, contract và ví
+2. Nhấp "Save as Preset" trong phần Preset Management
+3. Nhập tên cho preset
 
-**Save Configuration:**
-1. Set up your network, contract, and wallet
-2. Click "Save as Preset" in the Preset Management section
-3. Enter a name for your preset
+**Tải cấu hình:**
+1. Nhấp vào preset đã lưu để tải ngay lập tức
+2. Tất cả cài đặt sẽ được khôi phục
 
-**Load Configuration:**
-1. Click on any saved preset to load it instantly
-2. All settings (RPC, contract, wallet) will be restored
+### 6. Theo dõi hoạt động
 
-## 🔧 Supported Features
+**Activity Logs:**
+- Xem tất cả logs hoạt động ở phần cuối giao diện
+- Mỗi log có timestamp chi tiết
+- Có thể cuộn để xem nhiều logs
+- Nhấp "Clear" để xóa toàn bộ logs
 
-### Contract Types
-- **ERC-20 Tokens**: Full support for standard token operations
-- **ERC-721 NFTs**: Complete NFT interaction capabilities
-- **Custom Contracts**: Any EVM-compatible smart contract
-- **Complex Types**: Structs, arrays, and nested data structures
+## 🔧 Tính năng được hỗ trợ
 
-### Parameter Types
-- **Basic Types**: uint256, string, bool, address, bytes32
-- **Complex Types**: Arrays, structs, tuples
-- **Validation**: Automatic parameter validation and type checking
+### Loại Contract
+- **ERC-20 Tokens**: Hỗ trợ đầy đủ các thao tác token chuẩn
+- **ERC-721 NFTs**: Khả năng tương tác NFT hoàn chỉnh
+- **Custom Contracts**: Bất kỳ smart contract tương thích EVM nào
+- **Kiểu phức tạp**: Structs, arrays và cấu trúc dữ liệu lồng nhau
 
-### Transaction Features
-- **Gas Estimation**: Accurate gas calculations
-- **Custom Gas**: Manual gas limit and price setting
-- **ETH Value**: Support for payable functions
-- **Transaction Simulation**: Safe testing before execution
+### Kiểu tham số
+- **Kiểu cơ bản**: uint256, string, bool, address, bytes32
+- **Kiểu phức tạp**: Arrays, structs, tuples
+- **Xác thực**: Tự động xác thực tham số và kiểm tra kiểu
 
-## 🌟 Advanced Features
+### Tính năng giao dịch
+- **Ước tính Gas**: Tính toán gas chính xác
+- **Gas tùy chỉnh**: Đặt gas limit và giá gas thủ công
+- **Giá trị ETH**: Hỗ trợ các hàm payable
+- **Mô phỏng giao dịch**: Kiểm tra an toàn trước khi thực thi
 
-### Real-time Blockchain Calls
-- READ methods make actual RPC calls to the blockchain
-- Live data retrieval with proper result parsing
-- Support for complex return types
+## 🌟 Tính năng nâng cao
 
-### Intelligent Result Formatting
-- Automatic formatting based on parameter types
-- Special handling for timestamps, token amounts, and addresses
-- Structured display of complex objects and arrays
+### Gọi Blockchain thời gian thực
+- Phương thức READ thực hiện gọi RPC thực tế đến blockchain
+- Truy xuất dữ liệu trực tiếp với phân tích kết quả đúng
+- Hỗ trợ các kiểu trả về phức tạp
 
-### Error Handling
-- Comprehensive error messages
-- Transaction revert reasons
-- Network connectivity issues
-- Parameter validation errors
+### Định dạng kết quả thông minh
+- Tự động định dạng dựa trên kiểu tham số
+- Xử lý đặc biệt cho timestamps, số lượng token và địa chỉ
+- Hiển thị có cấu trúc cho objects và arrays phức tạp
 
-## 🔒 Security
+### Xử lý lỗi
+- Thông báo lỗi toàn diện
+- Lý do revert giao dịch
+- Vấn đề kết nối mạng
+- Lỗi xác thực tham số
 
-- **Private Key Handling**: Private keys are stored locally and never transmitted
-- **Secure Connections**: All RPC calls use secure HTTPS connections
-- **Input Validation**: Comprehensive validation of all user inputs
-- **No Backend**: Fully client-side application for maximum security
+## 🔒 Bảo mật
 
-## 🛠️ Technical Stack
+- **Xử lý Private Key**: Private keys được lưu cục bộ và không bao giờ được truyền
+- **Kết nối an toàn**: Tất cả gọi RPC sử dụng kết nối HTTPS an toàn
+- **Xác thực đầu vào**: Xác thực toàn diện tất cả đầu vào người dùng
+- **Không Backend**: Ứng dụng hoàn toàn phía client để bảo mật tối đa
+
+## 🛠️ Stack công nghệ
 
 - **Frontend**: React 18 + TypeScript
 - **Styling**: Tailwind CSS + shadcn/ui
@@ -192,43 +206,44 @@ Your Smart Contract Interaction Companion - A powerful web application for inter
 - **Build Tool**: Vite
 - **Icons**: Lucide React
 
-## 📝 Examples
+## 📝 Ví dụ
 
-### Example 1: ERC-20 Token Interaction
-1. Connect to Ethereum Mainnet
-2. Load USDC contract: `0xA0b86a33E6417Aa1e7Ae27c0D93C26c717E1D4dE`
-3. Use standard ERC-20 ABI
-4. Call `balanceOf` with your address
-5. Call `transfer` to send tokens
+### Ví dụ 1: Tương tác ERC-20 Token
+1. Kết nối với Ethereum Mainnet
+2. Tải USDC contract: `0xA0b86a33E6417Aa1e7Ae27c0D93C26c717E1D4dE`
+3. Sử dụng ABI ERC-20 chuẩn
+4. Gọi `balanceOf` với địa chỉ của bạn
+5. Gọi `transfer` để gửi tokens
 
-### Example 2: Custom Contract
-1. Connect to your network
-2. Enter your contract address
-3. Upload your contract's ABI file
-4. Execute custom methods with proper parameters
+### Ví dụ 2: Contract tùy chỉnh
+1. Kết nối với mạng của bạn
+2. Nhập địa chỉ contract
+3. Tải file ABI của contract
+4. Thực thi các phương thức tùy chỉnh với tham số phù hợp
 
-## 🤝 Contributing
+## 🤝 Đóng góp
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1. Fork repository
+2. Tạo feature branch
+3. Thực hiện thay đổi
+4. Test kỹ lưỡng
+5. Gửi pull request
 
-## 📄 License
+## 📄 Giấy phép
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Dự án này được cấp phép theo MIT License - xem file LICENSE để biết chi tiết.
 
-## 🆘 Support
+## 🆘 Hỗ trợ
 
-If you encounter any issues:
-1. Check the console for error messages
-2. Verify your network connection
-3. Ensure your wallet is properly connected
-4. Validate contract address and ABI format
+Nếu gặp vấn đề:
+1. Kiểm tra console để xem thông báo lỗi
+2. Xác minh kết nối mạng
+3. Đảm bảo ví được kết nối đúng cách
+4. Xác thực định dạng địa chỉ contract và ABI
+5. Xem Activity Logs để debug
 
-For additional help, please open an issue in the repository.
+Để được hỗ trợ thêm, vui lòng mở issue trong repository.
 
 ---
 
-**EVM Buddy - Made with ❤️ for the Web3 community**
+**EVM Buddy - Được tạo với ❤️ cho cộng đồng Web3**

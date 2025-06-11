@@ -31,6 +31,7 @@ import {
   Trash2,
   ScrollText
 } from 'lucide-react';
+import HelpModal from '@/components/HelpModal';
 
 interface ConnectionState {
   rpcUrl: string;
@@ -1289,8 +1290,10 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Connection Status */}
+            {/* Connection Status and Help Button */}
             <div className="flex items-center space-x-4">
+              <HelpModal />
+              
               {connection.isConnected ? (
                 <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
                   <CheckCircle className="w-3 h-3 mr-1" />
