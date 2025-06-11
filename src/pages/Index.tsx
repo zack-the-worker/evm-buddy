@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { Button } from "@/components/ui/button"
@@ -135,7 +136,7 @@ const Index = () => {
 
   const parseMethodInput = (value: string, type: string) => {
     if (type.startsWith('uint') || type.startsWith('int')) {
-      return ethers.BigInt(value);
+      return BigInt(value);
     } else if (type === 'bool') {
       return value.toLowerCase() === 'true';
     } else {
