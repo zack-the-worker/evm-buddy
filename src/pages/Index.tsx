@@ -27,7 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ReloadIcon, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader2, Copy, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSearchParams } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -100,11 +100,11 @@ const Index = () => {
       localStorage.setItem("rpcUrl", rpcUrl);
       localStorage.setItem("privateKey", privateKey);
 
-      const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const wallet = new ethers.Wallet(privateKey, provider);
 
       const address = await wallet.getAddress();
-      const balance = ethers.utils.formatEther(await wallet.getBalance());
+      const balance = ethers.formatEther(await provider.getBalance(address));
 
       setWalletAddress(address);
       setWalletBalance(balance);
@@ -143,7 +143,7 @@ const Index = () => {
         throw new Error("Contract ABI is required");
       }
 
-      const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const signer = privateKey
         ? new ethers.Wallet(privateKey, provider)
         : provider;
@@ -159,12 +159,13 @@ const Index = () => {
       const readMethods: string[] = [];
       const writeMethods: string[] = [];
 
-      Object.keys(contract.functions).forEach((method) => {
-        const fragment = contract.interface.getFunction(method);
-        if (fragment.stateMutability === "view" || fragment.stateMutability === "pure") {
-          readMethods.push(method);
-        } else {
-          writeMethods.push(method);
+      contract.interface.fragments.forEach((fragment: any) => {
+        if (fragment.type === "function") {
+          if (fragment.stateMutability === "view" || fragment.stateMutability === "pure") {
+            readMethods.push(fragment.name);
+          } else {
+            writeMethods.push(fragment.name);
+          }
         }
       });
 
@@ -263,16 +264,16 @@ const Index = () => {
       });
 
       if (isWriteMethod) {
-        const ethValueWei = ethers.utils.parseEther(ethValue);
+        const ethValueWei = ethers.parseEther(ethValue);
         const gasEstimate = isGasLimitAuto
-          ? await contract.estimateGas[selectedMethod](...params, {
+          ? await contract[selectedMethod].estimateGas(...params, {
             value: ethValueWei,
           })
           : gasLimit;
 
         const gasPriceToUse = isGasPriceAuto
           ? undefined
-          : ethers.utils.parseUnits(gasPrice.toString(), "gwei");
+          : ethers.parseUnits(gasPrice.toString(), "gwei");
 
         const tx = await contract[selectedMethod](...params, {
           value: ethValueWei,
@@ -413,7 +414,7 @@ const Index = () => {
               <Button onClick={connectWallet} disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Connecting...
                   </>
                 ) : (
@@ -476,7 +477,7 @@ const Index = () => {
             <Button onClick={loadContract} disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading Contract...
                 </>
               ) : (
@@ -642,7 +643,7 @@ const Index = () => {
               <Button onClick={callMethod} disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Calling Method...
                   </>
                 ) : (
