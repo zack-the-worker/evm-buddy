@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,11 +25,33 @@ interface WalletInfo {
   connectionType: 'private-key' | 'web3-wallet' | null;
 }
 
+interface ConnectionState {
+  rpcUrl: string;
+  chainId: number | null;
+  isConnected: boolean;
+  networkName: string;
+}
+
+interface ContractState {
+  address: string;
+  abi: any[];
+  isLoaded: boolean;
+}
+
 const Index = () => {
-  const [connection, setConnection] = useState(null);
+  const [connection, setConnection] = useState<ConnectionState>({
+    rpcUrl: '',
+    chainId: null,
+    isConnected: false,
+    networkName: ''
+  });
   const [walletAddress, setWalletAddress] = useState('');
   const [rpcUrl, setRpcUrl] = useState('');
-  const [contract, setContract] = useState(null);
+  const [contract, setContract] = useState<ContractState>({
+    address: '',
+    abi: [],
+    isLoaded: false
+  });
   const [presets, setPresets] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
@@ -36,7 +59,7 @@ const Index = () => {
     setWalletAddress(wallet.address);
   };
 
-  const handleConnectionChange = (newConnection: any) => {
+  const handleConnectionChange = (newConnection: ConnectionState) => {
     setConnection(newConnection);
   };
 
@@ -48,7 +71,7 @@ const Index = () => {
     setPresets(newPresets);
   };
 
-  const handleContractLoad = (newContract: any) => {
+  const handleContractLoad = (newContract: ContractState) => {
     setContract(newContract);
   };
 
