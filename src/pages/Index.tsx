@@ -33,6 +33,7 @@ import {
   Github
 } from 'lucide-react';
 import HelpModal from '@/components/HelpModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface ConnectionState {
   rpcUrl: string;
@@ -1274,9 +1275,9 @@ const Index = () => {
   const allMethods = [...readMethods, ...writeMethods];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
@@ -1287,21 +1288,23 @@ const Index = () => {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   EVM Buddy
                 </h1>
-                <p className="text-sm text-gray-500">Your Smart Contract Interaction Companion</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Your Smart Contract Interaction Companion</p>
               </div>
             </div>
             
-            {/* Connection Status and Help Button */}
+            {/* Connection Status, Theme Toggle, and Help Button */}
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              
               <HelpModal />
               
               {connection.isConnected ? (
-                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-100 dark:border-green-800">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   {connection.networkName}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-gray-500">
+                <Badge variant="outline" className="text-gray-500 dark:text-gray-400">
                   <AlertCircle className="w-3 h-3 mr-1" />
                   Not Connected
                 </Badge>
@@ -1330,7 +1333,7 @@ const Index = () => {
           {/* Left Column - RPC Connection & Wallet */}
           <div className="space-y-6">
             {/* RPC Connection */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center space-x-2">
                   <Globe className="w-5 h-5 text-blue-600" />
@@ -1395,7 +1398,7 @@ const Index = () => {
             />
 
             {/* Activity Logs */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -1431,7 +1434,7 @@ const Index = () => {
 
           {/* Right Column - Smart Contract */}
           <div className="space-y-6">
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center space-x-2">
                   <Code className="w-5 h-5 text-purple-600" />
@@ -1722,7 +1725,7 @@ const Index = () => {
       </div>
 
       {/* Footer with GitHub link */}
-      <footer className="py-4 px-8 border-t mt-8 bg-white/80">
+      <footer className="py-4 px-8 border-t mt-8 bg-white/80 dark:bg-gray-800/80">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <a 
             href="https://github.com/zack-the-worker/evm-buddy" 
