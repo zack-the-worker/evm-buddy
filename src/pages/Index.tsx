@@ -19,6 +19,41 @@ import PresetManager from '@/components/PresetManager';
 import HelpModal from '@/components/HelpModal';
 
 const Index = () => {
+  const [connection, setConnection] = useState(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [rpcUrl, setRpcUrl] = useState('');
+  const [contract, setContract] = useState(null);
+  const [presets, setPresets] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+
+  const handleWalletChange = (address: string) => {
+    setWalletAddress(address);
+  };
+
+  const handleConnectionChange = (newConnection: any) => {
+    setConnection(newConnection);
+  };
+
+  const handleWalletAddressChange = (address: string) => {
+    setWalletAddress(address);
+  };
+
+  const handlePresetsChange = (newPresets: any[]) => {
+    setPresets(newPresets);
+  };
+
+  const handleContractLoad = (newContract: any) => {
+    setContract(newContract);
+  };
+
+  const handleTransactionSent = (transaction: any) => {
+    setTransactions(prev => [...prev, transaction]);
+  };
+
+  const handleTokenInfoUpdate = (tokenInfo: any) => {
+    console.log('Token info updated:', tokenInfo);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-7xl mx-auto">
@@ -105,20 +140,45 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
-            <WalletConnection />
-            <RPCConnection />
-            <PresetManager />
+            <WalletConnection 
+              onWalletChange={handleWalletChange}
+              rpcUrl={rpcUrl}
+            />
+            <RPCConnection 
+              connection={connection}
+              onConnectionChange={handleConnectionChange}
+              onWalletAddressChange={handleWalletAddressChange}
+            />
+            <PresetManager 
+              presets={presets}
+              onPresetsChange={handlePresetsChange}
+              connection={connection}
+              contract={contract}
+            />
           </div>
 
           {/* Middle Column */}
           <div className="lg:col-span-1 space-y-6">
-            <SmartContractInteraction />
-            <TokenManager />
+            <SmartContractInteraction 
+              connection={connection}
+              contract={contract}
+              onContractLoad={handleContractLoad}
+              onTransactionSent={handleTransactionSent}
+            />
+            <TokenManager 
+              connection={connection}
+              walletAddress={walletAddress}
+              onTokenInfoUpdate={handleTokenInfoUpdate}
+              onTransactionSent={handleTransactionSent}
+            />
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-1">
-            <TransactionHistory />
+            <TransactionHistory 
+              transactions={transactions}
+              connection={connection}
+            />
           </div>
         </div>
 
