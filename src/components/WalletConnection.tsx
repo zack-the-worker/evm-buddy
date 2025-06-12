@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -230,10 +229,10 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({ onWalletChange, rpc
   };
 
   return (
-    <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+    <Card className="shadow-lg border bg-card text-card-foreground backdrop-blur-sm">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center space-x-2">
-          <Wallet className="w-5 h-5 text-blue-600" />
+          <Wallet className="w-5 h-5 text-primary" />
           <span>Wallet Connection</span>
         </CardTitle>
       </CardHeader>
@@ -271,13 +270,13 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({ onWalletChange, rpc
                     onClick={() => setShowPrivateKey(!showPrivateKey)}
                   >
                     {showPrivateKey ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Your private key is used locally to sign transactions
                 </p>
               </div>
@@ -303,8 +302,8 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({ onWalletChange, rpc
 
             <TabsContent value="web3-wallet" className="space-y-4">
               <div className="text-center py-4">
-                <Wallet className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600 mb-4">
+                <Wallet className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-4">
                   Connect your Web3 wallet to interact with smart contracts
                 </p>
                 
@@ -327,7 +326,7 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({ onWalletChange, rpc
                 </Button>
                 
                 {!isWeb3Available && (
-                  <p className="text-xs text-red-500 mt-2">
+                  <p className="text-xs text-destructive mt-2">
                     No Web3 wallet detected. Please install MetaMask or another Web3 wallet.
                   </p>
                 )}
@@ -335,29 +334,29 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({ onWalletChange, rpc
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+          <div className="p-4 bg-secondary/50 border border-border rounded-lg space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-800">Wallet Connected</span>
+                <span className="font-medium text-green-600 dark:text-green-400">Wallet Connected</span>
               </div>
-              <Badge variant="outline" className="text-green-700 border-green-300">
+              <Badge variant="outline" className="text-green-700 dark:text-green-400 border-green-300 dark:border-green-600">
                 {walletInfo.connectionType === 'private-key' ? 'Private Key' : 'Web3 Wallet'}
               </Badge>
             </div>
             
             <div className="space-y-2">
               <div>
-                <Label className="text-xs text-green-600">Address:</Label>
-                <p className="font-mono text-sm text-green-800 break-all">
+                <Label className="text-xs text-green-600 dark:text-green-400">Address:</Label>
+                <p className="font-mono text-sm text-green-800 dark:text-green-300 break-all">
                   {walletInfo.address}
                 </p>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs text-green-600">Balance:</Label>
-                  <p className="font-mono text-sm text-green-800">
+                  <Label className="text-xs text-green-600 dark:text-green-400">Balance:</Label>
+                  <p className="font-mono text-sm text-green-800 dark:text-green-300">
                     {isLoadingBalance ? (
                       <span className="flex items-center">
                         <Loader2 className="w-3 h-3 mr-1 animate-spin" />

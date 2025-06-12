@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -147,7 +146,7 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
   };
 
   return (
-    <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
+    <Card className="shadow-lg border bg-card text-card-foreground backdrop-blur-sm mb-6">
       <CardContent className="p-4">
         <div className="flex items-center space-x-4">
           {/* Preset Selection */}
@@ -157,7 +156,7 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Choose preset to load" />
               </SelectTrigger>
-              <SelectContent className="bg-white border shadow-lg z-50">
+              <SelectContent className="bg-popover border border-border shadow-lg z-50">
                 {presets.map((preset) => (
                   <SelectItem key={preset.id} value={preset.id}>
                     {preset.name}
@@ -226,10 +225,10 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
               </DialogHeader>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {presets.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No presets yet</p>
+                  <p className="text-muted-foreground text-center py-4">No presets yet</p>
                 ) : (
                   presets.map((preset) => (
-                    <div key={preset.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={preset.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex-1">
                         {editingPreset?.id === preset.id ? (
                           <div className="flex items-center space-x-2">
@@ -248,7 +247,7 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
                         ) : (
                           <div>
                             <h4 className="font-medium">{preset.name}</h4>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               {new Date(preset.createdAt).toLocaleDateString('en-US')}
                             </p>
                           </div>
@@ -271,7 +270,7 @@ const PresetManagement: React.FC<PresetManagementProps> = ({ onLoadPreset, curre
                             size="sm"
                             variant="ghost"
                             onClick={() => deletePreset(preset.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
