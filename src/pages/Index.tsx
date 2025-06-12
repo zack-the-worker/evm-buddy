@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,13 @@ import TokenManager from '@/components/TokenManager';
 import PresetManager from '@/components/PresetManager';
 import HelpModal from '@/components/HelpModal';
 
+interface WalletInfo {
+  address: string;
+  balance: string;
+  isConnected: boolean;
+  connectionType: 'private-key' | 'web3-wallet' | null;
+}
+
 const Index = () => {
   const [connection, setConnection] = useState(null);
   const [walletAddress, setWalletAddress] = useState('');
@@ -26,8 +32,8 @@ const Index = () => {
   const [presets, setPresets] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
-  const handleWalletChange = (address: string) => {
-    setWalletAddress(address);
+  const handleWalletChange = (wallet: WalletInfo) => {
+    setWalletAddress(wallet.address);
   };
 
   const handleConnectionChange = (newConnection: any) => {
